@@ -24,22 +24,68 @@ library(sjlabelled)
 library(ggplot2)
 ```
 
+
+loading wave 1 data
 ```{r}
-unzip("data/CRONOS3 Theme - Make it Healthy.zip", list = TRUE)
+healthy_wave1=haven::read_sav(here("data","CRONOS3 Theme - Make it Healthy.sav"))
+dictionary=labelled::generate_dictionary(healthy_wave1)
+```
+
+loading wave 3 data
+```{r}
+healthy_wave3=haven::read_sav(here("data","CRON3W3e01_1.sav"))
+dictionary=labelled::generate_dictionary(healthy_wave3)
+```
+
+loading wave 5 data
+```{r}
+healthy_wave5=haven::read_sav(here("data","CRON3w5e01.sav"))
+dictionary_wave_5=labelled::generate_dictionary(healthy_wave5)
+```
+
+checking for duplicate values 
+```{r}
+sum(duplicated(healthy_wave1$idno))
+sum(duplicated(healthy_wave5$idno))
+sum(duplicated(healthy_wave3$idno))
 ```
 
 ```{r}
-healthy=haven::read_sav(here("data","CRONOS3 Theme - Make it Healthy.sav"))
-dictionary=labelled::generate_dictionary(healthy)
+healthy_wave1$idno[
+  duplicated(healthy_wave1$idno) & healthy_wave1$w1hq3 == 1 &
+  !is.na(healthy_wave1$w1hq3)
+]
+```
+note- in healty wave 1 dataset there were 3 recipants with idno 25213  the same amount was there in healthy wave 3 dataset  
+and the same in wave_5 datset
+
+
+want to see which id of wave_1 are not there in wave 5 
+```{r}
+setdiff(healthy_wave1$idno[healthy_wave1$w1hq3 == 1], healthy_wave5$idno)
+```
+```{r}
+setdiff(healthy_wave1$idno[healthy_wave1$w1hq3 == 1], healthy_wave3$idno)
+```
+the only common columns in all the data sets is idno country and age 
+
+before removing the values the amount of values who could not see medical specialists
+```{r}
+sum(healthy_wave1$w1hq3 == 1, na.rm = TRUE)
 ```
 
+for now lets proceed with 
+removing duplicate values 
+
 ```{r}
-view(healthy)
+healthy_wave1=healthy_wave1[!duplicated(healthy_wave1$idno), ]
+healthy_wave3=healthy_wave3[!duplicated(healthy_wave3$idno), ]
+healthy_wave5=healthy_wave5[!duplicated(healthy_wave5$idno), ]
 ```
 
 check out the data availability for w1hq3(Needed to see medical specialists (excluding dentists and mental health services) last 12 months)
 ```{r}
-ggplot(healthy, aes(x = as_factor(w1hq3))) +
+ggplot(healthy_wave1, aes(x = as_factor(w1hq3))) +
   geom_bar() +
   labs(
     title = "Needed to See Medical Specialist (Last 12 Months)",
@@ -48,6 +94,187 @@ ggplot(healthy, aes(x = as_factor(w1hq3))) +
   ) +
   theme_minimal()
 ```
+there are 284 repsondants after removing the duplicates we have lost 40 potential data points fo the predictor 
 ```{r}
-sum(healthy$w1hq3 == 1, na.rm = TRUE)
+sum(healthy_wave1$w1hq3 == 1, na.rm = TRUE)
 ```
+
+```{r}
+sum(healthy_wave1$w1hq3 == 1|2|3, na.rm = TRUE)
+```
+
+there are around 284 responces which were saying- Yes, but I was unable to do so
+
+284 out of 10716
+
+which is quite normal but lets see the underlying factors
+
+```{r}
+length(unique(healthy_wave3$cntry))
+```
+there are a total of 11 countries out of which  284 people wanted  medical specialists but could not get it 
+
+```{r}
+ggplot(healthy_wave1[!is.na(healthy_wave1$w1hq5), ], aes(x = as_factor(w1hq5))) +
+  geom_bar() +
+  labs(
+    title = "Waiting period for a medical specialist",
+    x = "Response",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+Less than one month-1
+One to two months-2
+Three to five month-3
+Six to eight months	4
+Nine months to one year-5
+More than a year-6
+I don’t know-7
+
+```{r}
+sum((healthy_wave1$w1hq3 == 1|2|3|4|5|6|7)&(healthy_wave1$w1hq3 == 1), na.rm = TRUE)
+```
+just checking if there blank values for this case 
+
+
+there are some idno number which dont exist in wave 1 dataset
+
+TITLE- Predicting Unmet Need for Medical Specialist Care
+ ATTRIBUTE SELECTION 
+ dataset name       attribute name
+ healthy_wave1      Wait time for medical specialist appointment(w1hq5)
+ ''                 Needed to see medical specialists (excluding dentists and mental health services)(w1hq3)
+ ''                 Waiting list for diagnostic tests prescribed by a doctor(w1hq13)
+ ''                 cntry (country)
+ ''                 idno 
+                    age
+                    
+ 
+ healthy_wave5      Healthcare costs covered by system (w5hq18)
+ 
+ healthy_wave3      Adequate salary considering efforts (w3hq89)
+ ''                 Subjective mental health in general(w3hq57)
+ ''                 Subjective physical health in general(w3hq58)
+
+
+
+analysis in healthywave 5 dataset
+
+not all idno numbers who did not get access to medical specialist have filled the following column Healthcare costs covered by system only 221 out of 284 have filled 
+```{r}
+sum((healthy_wave1$idno[healthy_wave1$w1hq3==1& !is.na(healthy_wave1$w1hq3)])%in% healthy_wave5$idno)
+```
+healthy wave 3 dataset 
+not all idno numbers who did not get access to medical specialist have filled the following column Healthcare costs covered by system only 237 out of 284 have filled 
+
+```{r}
+sum((healthy_wave1$idno[healthy_wave1$w1hq3==1& !is.na(healthy_wave1$w1hq3)])%in% healthy_wave3$idno)
+```
+```{r}
+sum(duplicated(healthy_wave1$idno))
+```
+```{r}
+merged_data=merge(
+  healthy_wave1,
+  healthy_wave5,
+  by = "idno"
+)
+```
+
+```{r}
+merged_data=merge(
+  merged_data,
+  healthy_wave3,
+  by = "idno"
+)
+```
+
+a lot of loss of data might need to check and with to find a way to tackle the duplicate values 
+```{r}
+sum(merged_data$w1hq3==1,na.rm = T)
+```
+ 
+
+
+idea- 2 
+Needed to see a general practitioner last 12 months (w1hq1)
+Needed to see dentist last 12 months
+Needed to see medical specialists (excluding dentists and mental health services) last 12 months
+combining all of them then seeing the above idea where we will be seeing in general denied medical health care to get more data points
+
+
+
+ no of people who Needed to see a general practitioner last 12 months but could not 
+```{r}
+sum(healthy_wave1$w1hq1 ==1,na.rm = TRUE)
+```
+no fo people who Needed to see dentist last 12 months but could not
+```{r}
+sum(healthy_wave1$w1hq6 ==1,na.rm = TRUE)
+```
+no of people Needed to see medical specialists but could not 
+```{r}
+sum(healthy_wave1$w1hq3 == 1, na.rm = TRUE)
+```
+
+
+```{r}
+length(healthy_wave1$idno[
+  which(healthy_wave1$w1hq6 == 1|
+        healthy_wave1$w1hq3 == 1|
+        healthy_wave1$w1hq1 == 1)
+])
+```
+we have increased the number of observation to 986 rather than just 324
+
+unmet healthcare need
+merged Predictor variable required 
+dataset           Response variable
+healthy_wave1     (w1hq1)   Needed to see a general practitioner last 12 months
+healthy_wave1     (w1hq3)   Needed to see medical specialists last 12 months 
+healthy_wave1     (w1hq6)   Needed to see dentist last 12 months
+
+dataset            predicotr variable
+healthy_wave1     (w1hq5)   Wait time for medical specialist appointment 
+""                (w1hq11)  Needed diagnostic tests or scans, prescribed by a doctor last 12 months(case=1)
+""                (cntry)   Country
+""                (age)     age
+
+healthy_wave3     (w3hq77)  Currently in paid work
+""                (w3hq57)  Subjective mental health in general
+""                (w3hq58)  Subjective physical health in general
+""                (w3hq87)  How difficult to take an hour off for personal/family matters during work
+
+healthy_wave5     (w5hq18)  Healthcare costs covered by system
+""                (w5hq11)  Receive help and support from close contacts when needed
+""                (w5hq8)   Severe financial difficulties in family during first 18 years of life, how often
+""                (w5hq17)  Out-of-pocket cost for most recent private mental health consultation
+""                (w5hq12)  Felt lonely, how much of the time past week
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
