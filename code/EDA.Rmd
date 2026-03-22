@@ -234,10 +234,11 @@ dataset           Response variable
 healthy_wave1     (w1hq1)   Needed to see a general practitioner last 12 months
 healthy_wave1     (w1hq3)   Needed to see medical specialists last 12 months 
 healthy_wave1     (w1hq6)   Needed to see dentist last 12 months
+healthy_wave1     (w1hq11)  Needed diagnostic tests or scans, prescribed by a doctor last 12
 
 dataset            predicotr variable
 healthy_wave1     (w1hq5)   Wait time for medical specialist appointment 
-""                (w1hq11)  Needed diagnostic tests or scans, prescribed by a doctor last 12 months(case=1)
+ months(case=1)
 ""                (cntry)   Country
 ""                (age)     age
 
@@ -259,13 +260,81 @@ healthy_wave5     (w5hq18)  Healthcare costs covered by system
 
 
 
+checking country wise analysis 
+
+filtering out data 
+```{r}
+
+healthy_wave1$needed_any <- ifelse(
+  healthy_wave1$w1hq1 == 1 |
+  healthy_wave1$w1hq3 == 1 |
+  healthy_wave1$w1hq6 == 1 |
+  healthy_wave1$w1hq11 ==1,
+  1, 0
+)
+```
+
+counting the data
+```{r}
+healthy_wave1$total_needed <- rowSums(
+  healthy_wave1[, c("w1hq1", "w1hq3", "w1hq6","w1hq11")],
+  na.rm = TRUE
+)
+```
+
+```{r}
+country_summary <- healthy_wave1 %>%
+  group_by(cntry) %>%
+  summarise(
+    total_people = n(),
+    people_needed = sum(needed_any, na.rm = TRUE),
+    proportion = people_needed
+  )
+```
+
+```{r}
+ggplot(country_summary, aes(x = reorder(cntry, -proportion), 
+                            y = proportion)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "amount of People Needing Healthcare by Country",
+    x = "Country",
+    y = "amaount"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Value	Category
+AT	Austria
+BE	Belgium
+CZ	Czechia
+FI	Finland
+FR	France
+GB	United Kingdom
+HU	Hungary
+IS	Iceland
+PL	Poland
+PT	Portugal
+SI	Slovenia
+note there is UK
 
 
+```{r}
+country_summary=healthy_wave1 %>%
+  group_by(cntry) %>%
+  summarise(
+    people_needed = sum(needed_any, na.rm = TRUE),
+  ) %>%
+  arrange(desc(people_needed))
 
-
-
-
-
+country_summary
+```
+there are are a total 
+going to see how to handle duplicate values based on 
+checking id-25213 
+in healthy_wave1 25213 id has two entries with countries as CZ and FI 
+trying to see how the ids are filled realized that for every country that a given range of values to assigned 
+so as to create 
 
 
 
