@@ -444,18 +444,96 @@ solving duplicates by merging the cntry and idno column
 checking with healthwave_1 dataset 
 
 ```{r}
-library(dplyr)
-
 primary_health_wave1=healthy_wave1|>
   mutate(new_id = paste(cntry, idno, sep = "_"))
 sum(duplicated(primary_health_wave1$new_id))
 ```
-on merging a column country and idno to create a new unque id there still exist duplicates but has got reduced 
+on merging a column country and idno to create a new unque id there still exist duplicates but has got reduced 1431 to 21 
+
+```{r}
+primary_health_wave1=healthy_wave1|>
+  mutate(new_id = paste(cntry,idno,age, sep = "_"))
+sum(duplicated(primary_health_wave1$new_id))
+```
+```{r}
+primary_health_wave5=healthy_wave5|>
+  mutate(new_id = paste(cntry,idno,age, sep = "_"))
+sum(duplicated(primary_health_wave5$new_id))
+```
+```{r}
+primary_health_wave3=healthy_wave3|>
+  mutate(new_id = paste(cntry,idno,age, sep = "_"))
+sum(duplicated(primary_health_wave3$new_id))
+```
+on merging with with three columns which is age,idno and country wee were able to remove the duplicates 
+now why did we choose these three columns because these three columns were common between all datasets 
+
+```{r}
+length(primary_health_wave1$new_id[
+  which(primary_health_wave1$w1hq6 == 1|
+        primary_health_wave1$w1hq3 == 1|
+        primary_health_wave1$w1hq1 == 1|
+        primary_health_wave1$w1hq11==1)
+])
+```
+OK before merging data sets there is a total of 1048 useful observation 
+
+```{r}
+varible_analysis_heath_wave1=primary_health_wave1 |>
+  filter(as.numeric(w1hq6) == 1|
+           as.numeric(w1hq3)==1|
+           as.numeric(w1hq1)==1|
+           as.numeric(w1hq11)==1)|>
+  select(new_id,age,cntry,w1hq5)
+
+varible_analysis_heath_wave1|>
+  count(w1hq5,drop=FALSE)
+```
+(w1hq5)   Wait time for medical specialist appointment
+Less than one month-1
+One to two months-2
+Three to five months-3
+Six to eight months-4
+Nine months to one year-5
+More than a year-6
+I don’t know-7
+
+from this we can say that there is a lot of 845 na values out of 1048 rows in the dataset (need to discuss with ma'am)
 
 
 
+columns being selected 
+healthy_wave3     (w3hq77)  Currently in paid work
+""                (w3hq57)  Subjective mental health in general
+""                (w3hq58)  Subjective physical health in general
+""                (w3hq87)  How difficult to take an hour off for personal/family matters during work
 
+```{r}
+merged_Dataset_wave1_and_3=varible_analysis_heath_wave1|>
+  inner_join(
+    primary_health_wave3|>
+      select(new_id,w3hq77,w3hq57,w3hq58,w3hq87),
+    by="new_id"
+  )
+merged_Dataset_wave1_and_3
+```
+columns being merged 
+healthy_wave5     (w5hq18)  Healthcare costs covered by system
+""                (w5hq11)  Receive help and support from close contacts when needed
+""                (w5hq8)   Severe financial difficulties in family during first 18 years of life, how often
+""                (w5hq17)  Out-of-pocket cost for most recent private mental health consultation
+""                (w5hq12)  Felt lonely, how much of the time past week
 
+```{r}
+merged_Dataset_wave1_and_3_and_5=merged_Dataset_wave1_and_3|>
+  inner_join(
+    primary_health_wave5|>
+      select(new_id,w5hq18,w5hq11,w5hq8,w5hq17,w5hq12),
+    by="new_id"
+  )
+merged_Dataset_wave1_and_3_and_5
+```
+on merging the dataset based we have only 803 rows out of the original 1048 rows
 
 
 
