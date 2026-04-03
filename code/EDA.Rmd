@@ -86,7 +86,7 @@ handling duplicate values
 ```{r}
 
 healthy_wave$needed_any=ifelse(
-  rowSums(primary_health_wave[, c("w1hq1", "w1hq3", "w1hq6", "w1hq11")] == 1, na.rm = TRUE) > 0,
+  rowSums(healthy_wave[, c("w1hq1", "w1hq3", "w1hq6", "w1hq11")] == 1, na.rm = TRUE) > 0,
   1, 0
 )
 
@@ -103,14 +103,21 @@ checking with healthwave_1 dataset
 
 ```{r}
 primary_health_wave=healthy_wave|>
-  mutate(new_id = paste(cntry, idno, sep = "_"))
+  mutate(new_id=paste(cntry,idno,sep= "_"))
 sum(duplicated(primary_health_wave$new_id))
 ```
+```{r}
+primary_health_wave|>
+  filter(duplicated(new_id) | duplicated(new_id,fromLast=TRUE)) |>
+  arrange(new_id)|>
+  select(cntry, idno, new_id,age,gndr)
+```
+
 on merging a column country and idno to create a new unque id there still exist duplicates but has got reduced 1431 to 21 
 
 ```{r}
 primary_health_wave=primary_health_wave|>
-  mutate(new_id = paste(cntry,idno,age, sep = "_"))
+  mutate(new_id=paste(cntry,idno,age, sep="_"))
 sum(duplicated(primary_health_wave$new_id))
 ```
 removed all duplicates
@@ -120,32 +127,27 @@ Country wise analysis
 country_summary=primary_health_wave|>
   group_by(cntry)|>
   summarise(
-    total_people = n(),
-    people_needed = sum(needed_any, na.rm = TRUE),
-    proportion = people_needed/total_people
+    total_people=n(),
+    people_needed=sum(needed_any, na.rm = TRUE),
+    proportion=people_needed/total_people
   )
 country_summary
 ```
 
 ```{r}
-ggplot(country_summary, aes(x = reorder(cntry, -people_needed), 
-                            y = people_needed)) +
-  geom_bar(stat = "identity") +
-  labs(
-    title = "amount of People Needing Healthcare by Country",
-    x = "Country",
-    y = "amaount"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggplot(data=primary_health_wave)+
+  geom_bar(aes(x=cntry,fill=factor(needed_any)))+
+  scale_fill_manual(name="Medical Care Status",
+    labels=c("Did Not Need Medical Care", "Needed Medical Care"),
+    values=c("orange","blue")
+  ) 
 ```
 
 ```{r}
-
 country_summary1=primary_health_wave|>
   group_by(cntry)|>
   summarise(
-    people_needed = sum(needed_any, na.rm = TRUE),
+    people_needed=sum(needed_any, na.rm = TRUE),
   )|>
   arrange(desc(people_needed))
 
@@ -153,113 +155,25 @@ country_summary1
 ```
 
 ```{r}
-primary_health_wave |>
+service_country=primary_health_wave|>
+  group_by(cntry)|>
   summarise(
     GP=sum(w1hq1==1,na.rm=TRUE),
-    Specialist=sum(w1hq3==1,na.rm = TRUE),
-    dentist=sum(w1hq6==1,na.rm = TRUE),
-    diagnostic_test_req=sum(w1hq11==1,na.rm = TRUE)
-  )|>pivot_longer(
-    cols=everything(),
-    names_to = "Service",
-    values_to = "Count"
-  )|>
-  ggplot(aes(x=Service,y=Count))+
-  geom_bar(stat = "identity")+
-  labs(
-    title = " Unmet health care services across 11 countires",
-    x = "Service Type",
-    y = "Count"
-  )+ scale_x_discrete(labels = c(
-  GP = "General Practitioner",
-  Specialist = "Specialist",
-  Dentist = "Dentist",
-  diagnostic_test_req = "Diagnostic Test"
-))
+    Specialist=sum(w1hq3==1,na.rm=TRUE),
+    Dentist=sum(w1hq6==1,na.rm=TRUE),
+    Diagnostic_Test=sum(w1hq11==1,na.rm=TRUE))|>
+  pivot_longer(
+    cols=-cntry,
+    names_to="Service",
+    values_to="Count")
+ggplot(service_country,aes(x=reorder(cntry,-Count),y=Count,fill=Service))+
+  geom_bar(stat="identity")+
+  labs(title="Unmet Healthcare Services by Country",
+    x="Country",
+    y="Count")+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45,hjust=1))
 ```
-
-
-```{r}
-primary_health_wave|>
-  filter(cntry=="GB")|>
-  summarise(
-    GP=sum(w1hq1==1,na.rm=TRUE),
-    Specialist=sum(w1hq3==1,na.rm = TRUE),
-    dentist=sum(w1hq6==1,na.rm = TRUE),
-    diagnostic_test_req=sum(w1hq11==1,na.rm = TRUE)
-  )|>pivot_longer(
-    cols=everything(),
-    names_to = "Service",
-    values_to = "Count"
-  )|>
-  ggplot(aes(x=Service,y=Count))+
-  geom_bar(stat = "identity")+
-  labs(
-    title = " Unmet health care services United Kingdom",
-    x = "Service Type",
-    y = "Count"
-  )+ scale_x_discrete(labels = c(
-  GP = "General Practitioner",
-  Specialist = "Specialist",
-  Dentist = "Dentist",
-  diagnostic_test_req = "Diagnostic Test"
-))
-```
-
-```{r}
-primary_health_wave|>
-  filter(cntry=="FI")|>
-  summarise(
-    GP=sum(w1hq1==1,na.rm=TRUE),
-    Specialist=sum(w1hq3==1,na.rm = TRUE),
-    dentist=sum(w1hq6==1,na.rm = TRUE),
-    diagnostic_test_req=sum(w1hq11==1,na.rm = TRUE)
-  )|>pivot_longer(
-    cols=everything(),
-    names_to = "Service",
-    values_to = "Count"
-  )|>
-  ggplot(aes(x=Service,y=Count))+
-  geom_bar(stat = "identity")+
-  labs(
-    title = " Unmet health care services Finland",
-    x = "Service Type",
-    y = "Count"
-  )+ scale_x_discrete(labels = c(
-  GP = "General Practitioner",
-  Specialist = "Specialist",
-  Dentist = "Dentist",
-  diagnostic_test_req = "Diagnostic Test"
-))
-```
-
-```{r}
-primary_health_wave|>
-  filter(cntry=="BE")|>
-  summarise(
-    GP=sum(w1hq1==1,na.rm=TRUE),
-    Specialist=sum(w1hq3==1,na.rm = TRUE),
-    dentist=sum(w1hq6==1,na.rm = TRUE),
-    diagnostic_test_req=sum(w1hq11==1,na.rm = TRUE)
-  )|>pivot_longer(
-    cols=everything(),
-    names_to = "Service",
-    values_to = "Count"
-  )|>
-  ggplot(aes(x=Service,y=Count))+
-  geom_bar(stat = "identity")+
-  labs(
-    title = " Unmet health care services Belgium",
-    x = "Service Type",
-    y = "Count"
-  )+ scale_x_discrete(labels = c(
-  GP = "General Practitioner",
-  Specialist = "Specialist",
-  Dentist = "Dentist",
-  diagnostic_test_req = "Diagnostic Test"
-))
-```
-
 likert scale analysis for the columns 
 dataset            predicotr variable
 healthy_wave3     
