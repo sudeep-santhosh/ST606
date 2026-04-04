@@ -217,29 +217,43 @@ missing data analysis on
 (w5hq18)  Healthcare costs covered by system
 (w5hq11)  Receive help and support from close contacts when needed
 (w5hq8)   Severe financial difficulties in family during first 18 years of life, how often
+(w5hq17)  Out-of-pocket cost for most recent private mental health consultation
+(w5hq12)  Felt lonely, how much of the time past week
 ```{r}
-miss_var_summary(df_yes[, c("w3hq87", "w5hq18","w5hq11","w5hq8")])
+miss_var_summary(df_yes[, c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
 ```
-the largest percentage of missing data is in column  w3hq87 of 55%  and the rest shows 20% missing data this is for only people who have not revived health care 
+we might need to remove two varible for the model to take btter resutls 
+w5hq17- Out-of-pocket cost for most recent private mental health consultation -86.6%
+w3hq87- How difficult to take an hour off for personal/family matters during work -50.7% 
+as they very high missing values so its better to remove them 
 
 
 ```{r}
-gg_miss_upset(df_yes[, c("w3hq87", "w5hq18","w5hq11","w5hq8")])
+gg_miss_upset(df_yes[,c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
 ```
+removing both those column remove a high chunk of missing values as we can see w5hq17 and a combination of both w3hq87 with w5hq17 have the most missing values 
+
+
+
 ```{r}
-gg_miss_upset(df_no[, c("w3hq87", "w5hq18","w5hq11","w5hq8")])
+gg_miss_case(df_yes[,c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
 ```
+this was the case when when we counted all the columns 
+
 ```{r}
-gg_miss_case(df_yes)
+gg_miss_case(df_yes[,c( "w5hq18","w5hq11","w5hq8","w5hq12")])
 ```
 
 
 
 
 
-
-
-
+checking for nan values in the dataset
+loading the csv file 
+```{r}
+csv=read_csv(here("data","CRONOS3 Theme - Make it Healthy.csv"))
+miss_var_summary(csv[, c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
+```
 
 
 
