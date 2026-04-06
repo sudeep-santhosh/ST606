@@ -187,9 +187,10 @@ first making a likert scale on merged_datset having only poeple with unmet halth
 
 
 ```{r}
-primary_health_wave$mental_state=factor(primary_health_wave$w3hq57,levels = c(1, 2, 3, 4,5),labels = c("Very good","Good","Fair","Bad","Very bad"),ordered = TRUE)
-primary_health_wave$physical_state=factor(primary_health_wave$w3hq58,levels = c(1, 2, 3, 4,5),labels = c("Very good","Good","Fair","Bad","Very bad" ),ordered = TRUE)
+primary_health_wave$lonely=factor(primary_health_wave$w5hq12,levels = c(1, 2, 3, 4),labels = c("Very Positive","Positive","Decent","Negative" ),ordered = TRUE)
 
+primary_health_wave$mental_state=factor(primary_health_wave$w3hq57,levels = c(1, 2, 3, 4,5),labels = c("Very Positive","Positive","Decent","Negative","Very Negative"),ordered = TRUE)
+primary_health_wave$physical_state=factor(primary_health_wave$w3hq58,levels = c(1, 2, 3, 4,5),labels = c("Very Positive","Positive","Decent","Negative","Very Negative"),ordered = TRUE)
 
 df_yes=primary_health_wave[primary_health_wave$needed_any== 1, ]
 df_no=primary_health_wave[primary_health_wave$needed_any==0, ]
@@ -197,7 +198,7 @@ df_no=primary_health_wave[primary_health_wave$needed_any==0, ]
 
 
 ```{r}
-plot_likert(df_yes[,c("mental_state", "physical_state")],
+plot_likert(df_yes[,c("mental_state", "physical_state","lonely")],
 grid.range = c(1.2, 1.4),
 expand.grid = FALSE,
 values = "sum.outside",
@@ -205,12 +206,11 @@ show.prc.sign = TRUE,geom.colors = "RdBu")
 ```
 
 ```{r}
-plot_likert(df_no[,c("mental_state", "physical_state")],
+plot_likert(df_no[,c("mental_state", "physical_state","lonely")],
 grid.range = c(1.2, 1.4),
 expand.grid = FALSE,
 values = "sum.outside",
-geom.colors = "RdBu",
- show.prc.sign = TRUE)
+show.prc.sign = TRUE,geom.colors = "RdBu")
 ```
 missing data analysis on 
 (w3hq87)  How difficult to take an hour off for personal/family matters during work
@@ -236,12 +236,12 @@ removing both those column remove a high chunk of missing values as we can see w
 
 
 ```{r}
-gg_miss_case(df_yes[,c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
+gg_miss_case(primary_health_wave[,c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
 ```
 this was the case when when we counted all the columns 
 
 ```{r}
-gg_miss_case(df_yes[,c( "w5hq18","w5hq11","w5hq8","w5hq12")])
+gg_miss_case(primary_health_wave[,c( "w5hq18","w5hq11","w5hq8","w5hq12")])
 ```
 
 
@@ -263,8 +263,27 @@ miss_var_summary(healthy_wave[, c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","
 ```
 
 
+```{r}
+library(foreign)
+
+df =read.spss(here("data","CRONOS3 Theme - Make it Healthy.sav"),to.data.frame = TRUE)
+miss_var_summary(df[,c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
 
 
+```
+
+```{r}
+ggplot(primary_health_wave,aes(x=factor(needed_any),y=age,fill=factor(gndr)))+
+  geom_boxplot(outlier.shape = NA)+ 
+  labs(x="Healthcare Need Status",
+    y="Age",
+    title="Age Distribution by Healthcare Need Status")+
+  scale_x_discrete(labels=c("Met","Unmet"))+
+  scale_fill_manual(name="Gender",
+    labels=c("Male", "Female","No answer"),
+    values=c("blue","pink","black")
+  )
+```
 
 
 
