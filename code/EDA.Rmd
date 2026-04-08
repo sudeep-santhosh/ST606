@@ -284,7 +284,20 @@ ggplot(primary_health_wave,aes(x=factor(needed_any),y=age,fill=factor(gndr)))+
     values=c("blue","pink","black")
   )
 ```
+```{r}
+model_age <- glm(needed_any ~ age,
+                 data = primary_health_wave,
+                 family = binomial)
 
+summary(model_age)
+```
+```{r}
+model_age <- glm(needed_any ~ age+gndr,
+                 data = primary_health_wave,
+                 family = binomial)
+
+summary(model_age)
+```
 
 
 
