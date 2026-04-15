@@ -6,7 +6,9 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
 ```
 
 ```{r}
@@ -19,18 +21,47 @@ library(ggplot2)
 library(dplyr)
 library(sjPlot)
 library(naniar)
+library(tinytable)
+options(tinytable_tt_digits = 3)
+options(tinytable_latex_placement = "H")
 ```
 
-loading all the waves data
+# Data loading
+The `.sav` format was selected for data loading because it preserves variable labels, data types, and metadata more effectively than flat file formats such as `.csv`. This is particularly useful for analytically work.
 ```{r}
 healthy_wave=haven::read_sav(here("data","CRONOS3 Theme - Make it Healthy.sav"))
 dictionary=labelled::generate_dictionary(healthy_wave)
 ```
 
-checking for duplicate values 
+# Exploratory Data Analysis (EDA)
+
+## Duplicate value 
+
 ```{r}
 sum(duplicated(healthy_wave$idno))
 ```
+
+```{r}
+
+healthy_wave$needed_any=ifelse(
+  rowSums(healthy_wave[, c("w1hq1", "w1hq3", "w1hq6", "w1hq11")] == 1, na.rm = TRUE) > 0,
+  1, 0
+)
+```
+
+```{r}
+healthy_wave[healthy_wave$idno==25213,]
+```
+Checking id-25213  
+
+In `healthy_wave1`, 25213 id has two entries with countries as CZ and FI.
+
+Trying to see how the ids are filled, realized that for every country there is a given range of values assigned.
+
+So as to create unique values, we will be merging `cntry` and `idno` to create a new value, which will be the new primary key for filtering.
+
+Solution-1
+solving duplicates by merging the `cntry` and `idno` column 
 
  no of people who Needed to see a general practitioner last 12 months but could not 
 ```{r}
@@ -68,6 +99,7 @@ dataset            predicotr variable
 healthy_wave      (w1hq5)   Wait time for medical specialist appointment 
 ""                (cntry)   Country
 ""                (age)     age
+""                (gndr)    gender
 
 healthy_wave     (w3hq77)  Currently in paid work
 ""                (w3hq57)  Subjective mental health in general
@@ -81,22 +113,8 @@ healthy_wave     (w5hq18)  Healthcare costs covered by system
 ""                (w5hq12)  Felt lonely, how much of the time past week
 
 
-handling duplicate values 
 
-```{r}
 
-healthy_wave$needed_any=ifelse(
-  rowSums(healthy_wave[, c("w1hq1", "w1hq3", "w1hq6", "w1hq11")] == 1, na.rm = TRUE) > 0,
-  1, 0
-)
-
-```
-there are are a total 
-going to see how to handle duplicate values based on 
-checking id-25213 
-in healthy_wave1 25213 id has two entries with countries as CZ and FI 
-trying to see how the ids are filled realized that for every country that a given range of values to assigned 
-so as to create unique values we will be merging cntry and idno to create new value which will be the new primary key for filtering 
 
 solving duplicates by merging the cntry and idno column 
 checking with healthwave_1 dataset 
