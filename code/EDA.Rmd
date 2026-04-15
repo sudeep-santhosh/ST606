@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
+
 ```{r}
 library(tidyverse)
 library(here)
@@ -22,6 +23,7 @@ library(dplyr)
 library(sjPlot)
 library(naniar)
 library(tinytable)
+library(ggmosaic)
 options(tinytable_tt_digits = 3)
 options(tinytable_latex_placement = "H")
 ```
@@ -50,7 +52,11 @@ healthy_wave$needed_any=ifelse(
 ```
 
 ```{r}
-healthy_wave[healthy_wave$idno==25213,]
+healthy_wave %>%
+  filter(idno==25213)|>
+  select(cntry,age,idno)|>
+  haven::as_factor() |>
+  tt()
 ```
 Checking id-25213  
 
@@ -62,6 +68,37 @@ So as to create unique values, we will be merging `cntry` and `idno` to create a
 
 Solution-1
 solving duplicates by merging the `cntry` and `idno` column 
+
+```{r}
+primary_health_wave=healthy_wave|>
+  mutate(new_id=paste(cntry,idno,sep= "_"))
+sum(duplicated(primary_health_wave$new_id))
+```
+still 21 duplicate values exist so we merge another column which is `age` to create a primary key in the dataset
+also to check if its not just the same person and not at different ages / years we had to check this 
+
+
+```{r}
+primary_health_wave|>
+  filter(duplicated(new_id) | duplicated(new_id,fromLast=TRUE)) |>
+  arrange(new_id)|>
+  select(cntry, new_id,age,gndr)|>
+  haven::as_factor() |>
+  tt()
+```
+from this we can say that none of them are the same person as there huge again difference gap of more  than one year 
+
+on merging with with three columns which is  `age` ,`idno` and `cntry` we were able to remove the duplicates so now we can use this column as a primary key for identifying an individual
+
+```{r}
+primary_health_wave=primary_health_wave|>
+  mutate(new_id=paste(cntry,idno,age, sep="_"))
+sum(duplicated(primary_health_wave$new_id))
+```
+on merging with with three columns which is  age ,idno and cntry we were able to remove the duplicates so now we can use this column as a primary key for identifying an individual 
+
+
+## Model parametrs at intial phase
 
  no of people who Needed to see a general practitioner last 12 months but could not 
 ```{r}
@@ -87,60 +124,31 @@ length(healthy_wave$idno[
 
 we have increased the number of observation to 1048
 
-unmet healthcare need
-merged Predictor variable required 
-dataset           Response variable
-healthy_wave     (w1hq1)   Needed to see a general practitioner last 12 months
-healthy_wave     (w1hq3)   Needed to see medical specialists last 12 months 
-healthy_wave     (w1hq6)   Needed to see dentist last 12 months
-healthy_wave      (w1hq11)  Needed diagnostic tests or scans, prescribed by a doctor last 12
+### Variable Description Table
 
-dataset            predicotr variable
-healthy_wave      (w1hq5)   Wait time for medical specialist appointment 
-""                (cntry)   Country
-""                (age)     age
-""                (gndr)    gender
-
-healthy_wave     (w3hq77)  Currently in paid work
-""                (w3hq57)  Subjective mental health in general
-""                (w3hq58)  Subjective physical health in general
-""                (w3hq87)  How difficult to take an hour off for personal/family matters during work
-
-healthy_wave     (w5hq18)  Healthcare costs covered by system
-""                (w5hq11)  Receive help and support from close contacts when needed
-""                (w5hq8)   Severe financial difficulties in family during first 18 years of life, how often
-""                (w5hq17)  Out-of-pocket cost for most recent private mental health consultation
-""                (w5hq12)  Felt lonely, how much of the time past week
+| Variable | Role | Description |
+|----------|------|-------------|
+| w1hq1 | Response | Needed to see a general practitioner in the last 12 months |
+| w1hq3 | Response | Needed to see medical specialists in the last 12 months |
+| w1hq6 | Response | Needed to see dentist in the last 12 months |
+| w1hq11 | Response | Needed diagnostic tests or scans prescribed by a doctor in the last 12 months |
+| w1hq5 | Predictor | Wait time for medical specialist appointment |
+| cntry | Predictor | Country |
+| age | Predictor | Age |
+| gndr | Predictor | Gender |
+| w3hq77 | Predictor | Currently in paid work |
+| w3hq57 | Predictor | Subjective mental health in general |
+| w3hq58 | Predictor | Subjective physical health in general |
+| w3hq87 | Predictor | Difficulty taking an hour off for personal/family matters during work |
+| w5hq18 | Predictor | Healthcare costs covered by system |
+| w5hq11 | Predictor | Receive help and support from close contacts when needed |
+| w5hq8 | Predictor | Severe financial difficulties in family during first 18 years of life |
+| w5hq17 | Predictor | Out-of-pocket cost for most recent private mental health consultation |
+| w5hq12 | Predictor | Felt lonely during the past week |
 
 
 
-
-
-solving duplicates by merging the cntry and idno column 
-checking with healthwave_1 dataset 
-
-```{r}
-primary_health_wave=healthy_wave|>
-  mutate(new_id=paste(cntry,idno,sep= "_"))
-sum(duplicated(primary_health_wave$new_id))
-```
-```{r}
-primary_health_wave|>
-  filter(duplicated(new_id) | duplicated(new_id,fromLast=TRUE)) |>
-  arrange(new_id)|>
-  select(cntry, idno, new_id,age,gndr)
-```
-
-on merging a column country and idno to create a new unque id there still exist duplicates but has got reduced 1431 to 21 
-
-```{r}
-primary_health_wave=primary_health_wave|>
-  mutate(new_id=paste(cntry,idno,age, sep="_"))
-sum(duplicated(primary_health_wave$new_id))
-```
-removed all duplicates
-
-Country wise analysis
+## Country wise analysis
 ```{r}
 country_summary=primary_health_wave|>
   group_by(cntry)|>
@@ -148,26 +156,47 @@ country_summary=primary_health_wave|>
     total_people=n(),
     people_needed=sum(needed_any, na.rm = TRUE),
     proportion=people_needed/total_people
-  )
+  )|>
+  haven::as_factor() |>
+  tt()
 country_summary
 ```
 
 ```{r}
-ggplot(data=primary_health_wave)+
-  geom_bar(aes(x=cntry,fill=factor(needed_any)))+
-  scale_fill_manual(name="Medical Care Status",
-    labels=c("Did Not Need Medical Care", "Needed Medical Care"),
-    values=c("orange","blue")
-  ) 
+primary_health_wave$needed_any <- factor(
+  primary_health_wave$needed_any,
+  levels = c(0, 1),
+  labels = c("Met Medical Care", "Unmet Health Care Need")
+)
 ```
 
+```{r}
+ggplot(primary_health_wave)+
+  geom_mosaic(aes(x=product(needed_any,cntry),
+                  fill=needed_any))+
+  scale_x_productlist("Country") +
+  scale_y_productlist("Medical Care Status") +
+  scale_fill_manual(
+    values = c("orange", "blue"),
+    name = "Medical Care Status"
+  ) +
+  theme_minimal()+
+  theme(
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()
+  )
+```
+The mosaic plot suggests that, across all countries, most respondents reported having their medical care needs met. However, the proportion of unmet health care need varies by country, with relatively higher shares observed in countries such as **GB(United Kingdom)**, **PL(Poland)**, **PT(Portugal)**, and **FI(Finland)**. This indicates potential cross-country differences in access to or delivery of medical care services.
 ```{r}
 country_summary1=primary_health_wave|>
   group_by(cntry)|>
   summarise(
-    people_needed=sum(needed_any, na.rm = TRUE),
+    people_needed=sum(needed_any == "Unmet Health Care Need", na.rm = TRUE),
   )|>
-  arrange(desc(people_needed))
+  arrange(desc(people_needed))|>
+  haven::as_factor() |>
+  tt()
+  
 
 country_summary1
 ```
@@ -192,17 +221,32 @@ ggplot(service_country,aes(x=reorder(cntry,-Count),y=Count,fill=Service))+
   theme_minimal()+
   theme(axis.text.x=element_text(angle=45,hjust=1))
 ```
-likert scale analysis for the columns 
-dataset            predicotr variable
-healthy_wave3     
-""                (w3hq57)  Subjective mental health in general
-""                (w3hq58)  Subjective physical health in general
-""                (w5hq12)  Felt lonely, how much of the time past week
+## Variable Analysis thorugh likert charts 
+| Variable | Description |
+|----------|-------------|
+| w3hq57 | Subjective mental health in general |
+| w3hq58 | Subjective physical health in general |
+| w5hq12 | Felt lonely, how much of the time in the past week |
 
-first making a likert scale on merged_datset having only poeple with unmet halth care 
+```{r}
+label_summary <- tibble(
+  Variable = c(
+    "Subjective mental health in general",
+    "Subjective physical health in general",
+    "Felt lonely, how much of the time past week"
+  ),
+  Labels = c(
+    paste(names(attr(healthy_wave$w3hq57, "labels")), collapse = ", "),
+    paste(names(attr(healthy_wave$w3hq58, "labels")), collapse = ", "),
+    paste(names(attr(healthy_wave$w5hq12, "labels")), collapse = ", ")
+  )
+)
+
+tt(label_summary)
+```
 
 
-
+these are the labels provided for each variable so putting appropriately the factors for each labels 
 
 ```{r}
 primary_health_wave$lonely=factor(primary_health_wave$w5hq12,levels = c(1, 2, 3, 4),labels = c("Very Positive","Positive","Decent","Negative" ),ordered = TRUE)
@@ -210,8 +254,8 @@ primary_health_wave$lonely=factor(primary_health_wave$w5hq12,levels = c(1, 2, 3,
 primary_health_wave$mental_state=factor(primary_health_wave$w3hq57,levels = c(1, 2, 3, 4,5),labels = c("Very Positive","Positive","Decent","Negative","Very Negative"),ordered = TRUE)
 primary_health_wave$physical_state=factor(primary_health_wave$w3hq58,levels = c(1, 2, 3, 4,5),labels = c("Very Positive","Positive","Decent","Negative","Very Negative"),ordered = TRUE)
 
-df_yes=primary_health_wave[primary_health_wave$needed_any== 1, ]
-df_no=primary_health_wave[primary_health_wave$needed_any==0, ]
+df_yes=primary_health_wave[primary_health_wave$needed_any== "Unmet Health Care Need", ]
+df_no=primary_health_wave[primary_health_wave$needed_any=="Met Medical Care", ]
 ```
 
 
@@ -230,15 +274,38 @@ expand.grid = FALSE,
 values = "sum.outside",
 show.prc.sign = TRUE,geom.colors = "RdBu")
 ```
-missing data analysis on 
-(w3hq87)  How difficult to take an hour off for personal/family matters during work
-(w5hq18)  Healthcare costs covered by system
-(w5hq11)  Receive help and support from close contacts when needed
-(w5hq8)   Severe financial difficulties in family during first 18 years of life, how often
-(w5hq17)  Out-of-pocket cost for most recent private mental health consultation
-(w5hq12)  Felt lonely, how much of the time past week
+From this we can say that mental state of people who did receive medical care they had bad mental state as well as a bad physical state which makes it a good parameter for the model, we can also say loneliness is kind of high for people who need health care 
+
+
+## Missing Data Analysis
+
+| Variable Code | Description |
+|--------------|-------------|
+| w3hq87 | How difficult to take an hour off for personal/family matters during work |
+| w5hq18 | Healthcare costs covered by system |
+| w5hq11 | Receive help and support from close contacts when needed |
+| w5hq8 | Severe financial difficulties in family during first 18 years of life, how often |
+| w5hq17 | Out-of-pocket cost for most recent private mental health consultation |
+| w5hq12 | Felt lonely, how much of the time past week |
+
+
 ```{r}
-miss_var_summary(df_yes[, c("w3hq87", "w5hq18","w5hq11","w5hq8","w5hq17","w5hq12")])
+missing_raw=miss_var_summary(
+  df_yes[, c("w3hq87", "w5hq18", "w5hq11", "w5hq8", "w5hq17", "w5hq12")]
+)
+missing_table=tibble(
+  Variable=c(
+    "Time off work difficulty",
+    "Healthcare cost coverage",
+    "Social support",
+    "Childhood financial difficulty",
+    "Mental health consultation cost",
+    "Loneliness"
+  ),
+  Missing_Count=as.numeric(missing_raw$n_miss),
+  Missing_Percentage=as.numeric(missing_raw$pct_miss)
+)
+tt(missing_table)
 ```
 we might need to remove two varible for the model to take btter resutls 
 w5hq17- Out-of-pocket cost for most recent private mental health consultation -86.6%
