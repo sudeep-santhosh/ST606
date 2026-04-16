@@ -1,8 +1,9 @@
 ---
-title: "Untitled"
+title: "Healthcare Needs Report"
 author: "Sudeep Santhosh"
-date: "2026-03-04"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -163,7 +164,7 @@ country_summary=primary_health_wave|>
 country_summary
 ```
 
-```{r}
+```{r, echo=FALSE}
 primary_health_wave$needed_any=factor(
   primary_health_wave$needed_any,
   levels = c(0, 1),
@@ -171,7 +172,7 @@ primary_health_wave$needed_any=factor(
 )
 ```
 
-```{r}
+```{r, echo=FALSE}
 primary_health_wave$gndr=factor(
   primary_health_wave$gndr,
   levels = c(1, 2),
@@ -397,6 +398,7 @@ The interquartile ranges (`age_range`) show that age dispersion differs across c
 - **Poland** females unmet: 36.5–68.25 — wide spread  
 - **Iceland** females unmet: 31–52 — much narrower
 
+
 $$
 \begin{aligned}
 \log \left(
@@ -424,6 +426,128 @@ model_age=glm(
 
 summary(model_age)
 ```
+
+Based on the output we can say that 
+
+formula used 
+
+
+$$
+OR = e^{\beta}
+$$
+
+- As the estimate of age is negative each additional year is associated with **0.6% lower odds** of unmet healthcare need and is significantly associated with unmet healthcare need
+
+- Although females show slightly higher estimated odds, this difference is not statistically significant
+
+- Substantial cross-country differences were observed in the odds of reporting unmet healthcare need relative to Austria. Belgium exhibited significantly lower odds, while most other countries showed significantly higher odds. Particularly large effects were observed for the United Kingdom, Poland, and Portugal, where respondents had more than twice the odds of reporting unmet healthcare need compared with Austria. Hungary showed higher estimated odds; however, this difference was not statistically significant.
+
+- Worse subjective mental health was associated with slightly higher estimated odds of reporting unmet healthcare need (approximately 5% per one-level increase); however, this relationship was not statistically significant.
+
+- Worse subjective physical health was significantly associated with unmet healthcare need. Specifically, each one-level worsening in physical health was associated with approximately **19% higher odds** of reporting unmet healthcare need.next 
+
+- Higher levels of loneliness were significantly associated with unmet healthcare need. Specifically, each one-level increase in loneliness was associated with approximately **29% higher odds** of reporting unmet healthcare need.
+
+- Greater social support from close contacts was associated with a very small decrease in the estimated odds of unmet healthcare need; however, this relationship was not statistically significant.
+
+- Being in paid work was associated with approximately **9% higher** estimated odds of reporting unmet healthcare need; however, this relationship was not statistically significant.
+
+- Lower levels of childhood financial difficulty were significantly associated with reduced odds of reporting unmet healthcare need. Specifically, each one-level movement toward less frequent financial hardship during the first 18 years of life was associated with approximately **15% lower odds** of unmet healthcare need.
+
+- Poorer perceived healthcare cost coverage was strongly and significantly associated with unmet healthcare need. Specifically, each one-level movement toward disagreement that healthcare costs are covered by the system was associated with approximately **34% higher odds** of reporting unmet healthcare need.
+
+
+
+```{r}
+primary_health_wave$w3hq77=factor(
+  primary_health_wave$w3hq77,
+  levels = c(1,2),
+  labels = c("Yes","No")
+)
+```
+
+
+```{r}
+primary_health_wave$w3hq57=factor(
+  primary_health_wave$w3hq57,
+  levels=c(5,4,3,2,1),
+  labels=c("Very bad","Bad","Fair","Good","Very good"),
+  ordered=TRUE
+)
+```
+
+
+```{r}
+primary_health_wave$w3hq58=factor(
+  primary_health_wave$w3hq58,
+  levels=c(5,4,3,2,1),
+  labels=c("Very bad","Bad","Fair","Good","Very good"),
+  ordered=TRUE
+)
+```
+
+```{r}
+primary_health_wave$w5hq8=factor(
+  primary_health_wave$w5hq8,
+  levels=c(5,4,3,2,1),
+  labels=c("Never","Hardly ever","Sometimes","Often","Always"),
+  ordered=TRUE
+)
+```
+
+```{r}
+primary_health_wave$w5hq12=factor(
+  primary_health_wave$w5hq12,
+  levels = c(1,2,3,4),
+  labels = c(
+    "None or almost none of the time",
+    "Some of the time",
+    "Most of the time",
+    "All or almost all of the time"
+  ),
+  ordered = TRUE
+)
+```
+
+```{r}
+primary_health_wave$w5hq18=factor(
+  primary_health_wave$w5hq18,
+  levels = c(5,4,3,2,1),
+  labels = c(
+    "Disagree strongly",
+    "Disagree",
+    "Neither agree nor disagree",
+    "Agree",
+    "Agree strongly"
+  ),
+  ordered = TRUE
+)
+```
+
+
+
+
+```{r}
+model_age=glm(
+  needed_any ~ age + gndr + cntry +
+    w3hq57 + w3hq58 +w5hq12 + w5hq11 +w3hq77+w5hq8 + w5hq18 ,
+  family = binomial,
+  data = primary_health_wave
+)
+
+summary(model_age)
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
