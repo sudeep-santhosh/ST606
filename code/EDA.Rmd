@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE,
 
 
 ```{r}
+library(lme4)
 library(tidyverse)
 library(here)
 library(haven)
@@ -457,6 +458,11 @@ $$
 - Poorer perceived healthcare cost coverage was strongly and significantly associated with unmet healthcare need. Specifically, each one-level movement toward disagreement that healthcare costs are covered by the system was associated with approximately **34% higher odds** of reporting unmet healthcare need.
 
 
+Drawbacks
+
+- ordinal variables were not at level we are alsoing having gender baseline cntry basline and so on 
+
+
 
 ```{r}
 primary_health_wave$w3hq77=factor(
@@ -525,8 +531,6 @@ primary_health_wave$w5hq18=factor(
 ```
 
 
-
-
 ```{r}
 model_age=glm(
   needed_any ~ age + gndr + cntry +
@@ -538,16 +542,78 @@ model_age=glm(
 summary(model_age)
 ```
 
+- There is weak evidence suggesting that age may be negatively associated with unment health care but the effect is not statistically significant at the 5% level
+
+- Females have about 14% higher odds of having unmet healthcare needs compared to males, holding all other variables constant but the effect is statistically significant at 5% singificanat level 
+
+- Country of residence shows substantial variation in unmet healthcare needs. Compared to the reference  `AT` (Austria), individuals in several countries—such as `GB`(United Kingdom), `PL`(Poland), `PT`(Portugal), `FI`(Finland), `FR`(France), and `SI`(Slovenia) —have significantly higher odds of reporting unmet healthcare needs. For example, individuals in `GB` have nearly 2.8 times higher odds compared to those in `AT`.In contrast, individuals in `BE` have significantly lower odds of unmet healthcare needs relative to `AT`. Some countries (e.g., `HU`(Hungary)) do not show statistically significant differences from the reference category, indicating that their levels of unmet healthcare needs are not distinguishable from `AT` based on this model.
+
+
+- `w3hq58` There is a significant negative linear relationship between Subjective physical health in general and unmet health care
+
+-  `w5hq12`There is a significant positive linear relationship between Felt lonely during the past week parameter and unmet health care
+
+- `w5hq8` There is a significant positive linear relationship between financial difficulties bellow the age of 18 parameter and unmet health care 
+
+- `w5hq18` Healthcare costs covered by system and unmet healthcare shows a strong and statistically significant negative linear association  In addition, significant higher-order (cubic and quadratic) terms suggest that the relationship is not strictly linear, indicating some complexity in how different levels of the variable relate to the outcome
 
 
 
 
 
+```{r}
+model_2 =glmer(
+  needed_any ~ age + gndr + w5hq18 + (1 | cntry),
+  family = binomial,
+  data = primary_health_wave
+)
+summary(model_2)
+```
 
 
+before adding `w5hq12` (Felt lonely during the past week) we are going to check correlation of `w5hq12` and `w5hq18`
+
+```{r}
+cor(as.numeric(primary_health_wave$w5hq18),
+    as.numeric(primary_health_wave$w5hq12),
+    method = "spearman",
+    use = "complete.obs")
+```
+`w5hq18` and `w5hq12` are not strongly correlated, so they are unlikely to cause multicollinearity issues in the model.
+we used spearman method here because we wanted to take based on their rank in ordeinal rather than thier actual values 
 
 
+```{r}
+model_3=glmer(
+  needed_any~age+gndr+w5hq18+w5hq12+(1|cntry),
+  family=binomial,
+  data=primary_health_wave
+)
+summary(model_3)
+```
 
+will be checking cor again with `w5hq8` with the other paremters in the model 
 
+```{r}
+cor(as.numeric(primary_health_wave$w5hq8),
+    as.numeric(primary_health_wave$w5hq18),
+    method = "spearman",
+    use = "complete.obs")
 
+cor(as.numeric(primary_health_wave$w5hq8),
+    as.numeric(primary_health_wave$w5hq12),
+    method = "spearman",
+    use = "complete.obs")
+```
+its safe to add `w5hq8` after checking correlation of the variables
+
+```{r}
+model_4=glmer(
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+(1|cntry),
+  family=binomial,
+  data=primary_health_wave
+)
+summary(model_4)
+
+```
 
