@@ -46,6 +46,9 @@ saveRDS(healthy_wave, here("data", "healthy_wave.rds"))
 sum(duplicated(healthy_wave$idno))
 ```
 
+
+
+
 ```{r}
 
 healthy_wave$needed_any=ifelse(
@@ -54,6 +57,7 @@ healthy_wave$needed_any=ifelse(
 )
 ```
 
+
 ```{r}
 healthy_wave %>%
   filter(idno==25213)|>
@@ -61,6 +65,9 @@ healthy_wave %>%
   haven::as_factor() |>
   tt()
 ```
+
+
+
 Checking id-25213  
 
 In `healthy_wave1`, 25213 id has two entries with countries as CZ and FI.
@@ -77,6 +84,9 @@ primary_health_wave=healthy_wave|>
   mutate(new_id=paste(cntry,idno,sep= "_"))
 sum(duplicated(primary_health_wave$new_id))
 ```
+
+
+
 still 21 duplicate values exist so we merge another column which is `age` to create a primary key in the dataset
 also to check if its not just the same person and not at different ages / years we had to check this 
 
@@ -90,6 +100,8 @@ primary_health_wave|>
   slice_head(n=12)|>
   tt()
 ```
+
+
 from this we can say that none of them are the same person as there huge again difference gap of more  than one year 
 
 on merging with with three columns which is  `age` ,`idno` and `cntry` we were able to remove the duplicates so now we can use this column as a primary key for identifying an individual
@@ -102,20 +114,29 @@ sum(duplicated(primary_health_wave$new_id))
 
 
 
+
+
+
 ## Model parametrs at intial phase
 
  no of people who Needed to see a general practitioner last 12 months but could not 
 ```{r}
 sum(healthy_wave$w1hq1 ==1,na.rm = TRUE)
 ```
+
+
+
 no fo people who Needed to see dentist last 12 months but could not
 ```{r}
 sum(healthy_wave$w1hq6 ==1,na.rm = TRUE)
 ```
+
+
 no of people Needed to see medical specialists but could not 
 ```{r}
 sum(healthy_wave$w1hq3 == 1, na.rm = TRUE)
 ```
+
 
 ```{r}
 length(healthy_wave$idno[
@@ -136,7 +157,7 @@ we have increased the number of observation to 1048
 | w1hq3 | Response | Needed to see medical specialists in the last 12 months |
 | w1hq6 | Response | Needed to see dentist in the last 12 months |
 | w1hq11 | Response | Needed diagnostic tests or scans prescribed by a doctor in the last 12 months |
-| w1hq5 | Predictor | Wait time for medical specialist appointment |
+| w1hq5 | Response | Wait time for medical specialist appointment |
 | cntry | Predictor | Country |
 | age | Predictor | Age |
 | gndr | Predictor | Gender |
@@ -183,6 +204,21 @@ primary_health_wave$gndr=factor(
 ```
 
 ```{r}
+country_order=primary_health_wave |>
+  group_by(cntry) |>
+  summarise(
+    unmet_prop = mean(needed_any == "Unmet Health Care", na.rm = TRUE)
+  ) |>
+  arrange(desc(unmet_prop)) |>
+  pull(cntry)
+
+primary_health_wave$cntry <- factor(
+  primary_health_wave$cntry,
+  levels = country_order
+)
+```
+
+```{r}
 ggplot(primary_health_wave)+
   geom_mosaic(aes(x=product(needed_any,cntry),
                   fill=needed_any))+
@@ -198,6 +234,7 @@ ggplot(primary_health_wave)+
     axis.ticks.y = element_blank()
   )
 ```
+
 
 
 The mosaic plot suggests that, across all countries, most respondents reported having their medical care needs met. However, the proportion of unmet health care need varies by country, with relatively higher shares observed in countries such as **GB(United Kingdom)**, **PL(Poland)**, **PT(Portugal)**, and **FI(Finland)**. This indicates potential cross-country differences in access to or delivery of medical care services.
@@ -236,6 +273,14 @@ ggplot(service_country,aes(x=reorder(cntry,-Count),y=Count,fill=Service))+
   theme(axis.text.x=element_text(angle=45,hjust=1))
 ```
 
+
+```{r}
+class(primary_health_wave$needed_any)
+
+levels(primary_health_wave$needed_any)
+
+table(primary_health_wave$needed_any)
+```
 
 
 
@@ -276,22 +321,71 @@ df_yes=primary_health_wave[primary_health_wave$needed_any== "Unmet Health Care",
 df_no=primary_health_wave[primary_health_wave$needed_any=="Met Health Care", ]
 ```
 
-
 ```{r}
-plot_likert(df_yes[,c("mental_state", "physical_state","lonely")],
-grid.range = c(1.2, 1.4),
-expand.grid = FALSE,
-values = "sum.outside",
-show.prc.sign = TRUE,geom.colors = "RdBu")
+colnames(df_no)[colnames(df_no) == "mental_state"] <- "Mental State"
+colnames(df_no)[colnames(df_no) == "physical_state"] <- "Physical State"
+colnames(df_no)[colnames(df_no) == "lonely"] <- "Feeling Lonely"
 ```
 
 ```{r}
-plot_likert(df_no[,c("mental_state", "physical_state","lonely")],
+colnames(df_yes)[colnames(df_yes) == "mental_state"] <- "Mental State"
+colnames(df_yes)[colnames(df_yes) == "physical_state"] <- "Physical State"
+colnames(df_yes)[colnames(df_yes) == "lonely"] <- "Feeling Lonely"
+```
+
+
+```{r}
+plot_likert(df_yes[,c("Mental State", "Physical State", "Feeling Lonely")],
 grid.range = c(1.2, 1.4),
 expand.grid = FALSE,
 values = "sum.outside",
-show.prc.sign = TRUE,geom.colors = "RdBu")
+show.n = FALSE,
+show.prc.sign = TRUE,
+geom.colors = c(
+  "#08519C",  # Very Positive (dark blue)
+  "#A6CEE3",  # Positive (light blue)
+  "#FFB3B3",  # Decent (light red)
+  "#FF0000"  # Negative (bright red)
+))+
+theme(
+  axis.text.y = element_text(
+    size = 10,
+    face = "bold"
+  ),
+  axis.text.x=element_text(face="bold")
+  
+)
 ```
+
+```{r}
+plot_likert(df_no[,c("Mental State", "Physical State", "Feeling Lonely")],
+grid.range = c(1.2, 1.4),
+expand.grid = FALSE,
+values = "sum.outside",
+show.n = FALSE,
+show.prc.sign = TRUE,
+geom.colors = c(
+  "#08519C",  # Very Positive (dark blue)
+  "#A6CEE3",  # Positive (light blue)
+  "#FFB3B3",  # Decent (light red)
+  "#FF0000"  # Negative (bright red)
+))+
+theme(
+  axis.text.y = element_text(
+    size = 10,
+    face = "bold"
+  ),
+  axis.text.x=element_text(face="bold")
+  
+)
+```
+```{r}
+find("plot_likert")
+```
+
+
+
+
 From this we can say that mental state of people who did receive medical care they had bad mental state as well as a bad physical state which makes it a good parameter for the model, we can also say loneliness is kind of high for people who need health care 
 
 
@@ -370,6 +464,27 @@ ggplot(primary_health_wave,aes(x=factor(needed_any),y=age,fill=factor(gndr)))+
   )+facet_wrap(vars(cntry))
 ```
 
+```{r}
+ggplot(primary_health_wave,
+       aes(x = factor(gndr),
+           y = age,
+           fill = factor(needed_any))) +
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Gender",
+    y = "Age",
+    title = "Age Distribution by Gender and Healthcare Need Status"
+  ) +
+  scale_x_discrete(
+    labels = c("M", "F", "NA")
+  ) +
+  scale_fill_manual(
+    name = "Healthcare Need Status",
+    labels = c("Met", "Unmet"),
+    values = c("blue", "pink")
+  ) +
+  facet_wrap(vars(cntry))
+```
 
 
 ```{r}
@@ -548,6 +663,58 @@ PHW$w5hq18=factor(
 )
 ```
 
+```{r}
+model_2=glm(
+  needed_any ~ age + gndr + cntry +
+    factor(w3hq57,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w5hq12,
+           levels = c(1,2,3,4),
+           labels = c(
+             "None or almost none of the time",
+             "Some of the time",
+             "Most of the time",
+             "All or almost all of the time"
+           ),
+           ordered = TRUE) +
+
+    w5hq11 +
+
+    factor(w3hq77,
+           levels = c(1,2),
+           labels = c("Yes","No")) +
+
+    factor(w5hq8,
+           levels = c(5,4,3,2,1),
+           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered = TRUE) +
+
+    factor(w5hq18,
+           levels = c(5,4,3,2,1),
+           labels = c(
+             "Disagree strongly",
+             "Disagree",
+             "Neither agree nor disagree",
+             "Agree",
+             "Agree strongly"
+           ),
+           ordered = TRUE),
+  family = binomial,
+  data = primary_health_wave
+)
+summary(model_2)
+```
+
+
+
 Model 1 having level for your orindal varibles
 ```{r}
 model_1=glm(
@@ -576,7 +743,10 @@ summary(model_1)
 - `w5hq18` Healthcare costs covered by system and unmet healthcare shows a strong and statistically significant negative linear association  In addition, significant higher-order (cubic and quadratic) terms suggest that the relationship is not strictly linear, indicating some complexity in how different levels of the variable relate to the outcome
 
 
-
+```{r}
+anova(model_0,model_2)
+```
+Converting the survey variables to categorical factors resulted in a statistically significant improvement in model fit (Likelihood Ratio Test: χ² = 24.59, df = 14, p = 0.039), indicating that the relationship between these variables and the outcome is not adequately captured by assuming a simple linear effect across response categories.
 
 
 Mixed-Effects Logistic Regression Model
@@ -641,6 +811,61 @@ model_6=glmer(
 )
 summary(model_6)
 ```
+```{r}
+model_7=model_0 <- glmer(
+  needed_any ~ age + gndr +
+
+    factor(w3hq77,
+           levels = c(1,2),
+           labels = c("Yes","No")) +
+
+    factor(w3hq57,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w5hq8,
+           levels = c(5,4,3,2,1),
+           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered = TRUE) +
+
+    factor(w5hq12,
+           levels = c(1,2,3,4),
+           labels = c(
+             "None or almost none of the time",
+             "Some of the time",
+             "Most of the time",
+             "All or almost all of the time"
+           ),
+           ordered = TRUE) +
+
+    factor(w5hq18,
+           levels = c(5,4,3,2,1),
+           labels = c(
+             "Disagree strongly",
+             "Disagree",
+             "Neither agree nor disagree",
+             "Agree",
+             "Agree strongly"
+           ),
+           ordered = TRUE) +
+
+    w5hq11 +
+    (1 | cntry),
+
+  family = binomial,
+  data = primary_health_wave
+)
+```
+
+```{r}
+anova(model_7,model_5)
+```
 
 
 ```{r}
@@ -650,19 +875,44 @@ comparison_table <- data.frame(
             "Mixed-effects logistic regression with ordered factor encoding",
             "Logistic regression with numeric encoding",
             "Logistic regression with ordered factor encodin"),
-  AIC = c(AIC(model_5), AIC(model_6),AIC(model_0),AIC(model_1)),
-  BIC = c(BIC(model_5), BIC(model_6),BIC(model_0),BIC(model_1)),
+  AIC = c(AIC(model_5), AIC(model_7),AIC(model_0),AIC(model_2)),
+  BIC = c(BIC(model_5), BIC(model_7),BIC(model_0),BIC(model_2)),
   LogLik = c(
     as.numeric(logLik(model_5)),
-    as.numeric(logLik(model_6)),
+    as.numeric(logLik(model_7)),
     as.numeric(logLik(model_0)),
-    as.numeric(logLik(model_1))
+    as.numeric(logLik(model_2))
     
   )
 )
 tt(comparison_table)
 ```
 Although ordered factor encoding improved model fit as indicated by higher log-likelihood values, the substantial increase in model complexity resulted in higher BIC values. Numeric encoding provided a more parsimonious model and achieved the lowest AIC among all candidate models.
+
+```{r}
+anova_57=anova(model_7, model_5)
+anova_02=anova(model_0, model_2)
+anova_table=data.frame(
+  Comparison = c(
+    "Logistic: Numeric vs Ordered Factors",
+    "Mixed-effects: Numeric vs Ordered Factors"
+  ),
+  Chi_Square = c(
+    anova_02$Deviance[2],
+    anova_57$Chisq[2]
+  ),
+  DF = c(
+    anova_02$Df[2],
+    anova_57$Df[2]
+  ),
+  P_Value = c(
+    anova_02$`Pr(>Chi)`[2],
+    anova_57$`Pr(>Chisq)`[2]
+  )
+)
+
+tt(anova_table)
+```
 
 
 Interactions between variables 
@@ -676,7 +926,13 @@ An interaction between age and gender was explored to investigate whether the re
 The interaction between loneliness and subjective physical health was explored to assess whether the relationship between physical health and unmet healthcare need differed according to levels of social isolation. Individuals experiencing poor physical health may face greater barriers to healthcare access when combined with loneliness, as limited social support and increased isolation can further restrict healthcare-seeking behaviour. Therefore, the interaction term was included to examine the combined effect of physical health and loneliness on unmet healthcare need.
 
 
+3) cntry*gndr
+
 posssible interaction but will need diagrams to prove this for reasoning 
+
+
+
+
 
 
 
