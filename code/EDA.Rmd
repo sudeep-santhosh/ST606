@@ -932,7 +932,67 @@ posssible interaction but will need diagrams to prove this for reasoning
 
 
 
+from paper Understanding Interaction Models: Improving Empirical Analyses
+
+Section 2- include interaction terms seprately 
+
+
+physical health and mental health interacltion
+```{r}
+model8=glmer(needed_any~w3hq57*w3hq58+w3hq57+w3hq58+(1|cntry),
+  family=binomial,
+  data=PHW)
+```
+
+```{r}
+summary(model8)
+```
+ntg is singnifincant wow 
+```{r}
+table(primary_health_wave$w3hq57,
+      primary_health_wave$w3hq58)
+```
+lets check collinearity 
+```{r}
+cor(as.numeric(primary_health_wave$w3hq57),
+    as.numeric(primary_health_wave$w3hq58),
+    use = "complete.obs",
+    method = "spearman")
+```
+
+```{r}
+model_mh=glmer(
+  needed_any~w3hq57+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model_mh)
+```
+```{r}
+model_ph=glmer(
+  needed_any~w3hq57+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model_ph)
+```
+
+
+Both self-rated mental health and self-rated physical health were associated with unmet healthcare needs in descriptive analyses. The two measures were moderately correlated (Spearman's ρ = 0.49), indicating that individuals reporting poorer physical health also tended to report poorer mental health. However, the correlation was not sufficiently high to suggest severe multicollinearity. In the multilevel logistic regression model, self-rated physical health remained a significant predictor of unmet healthcare needs, whereas self-rated mental health did not. This suggests that physical health contributed more strongly to explaining variation in unmet healthcare needs after accounting for other covariates.
 
 
 
+checking interaction between physical health and loneliness 
+w5hq12
+```{r}
+model9=glmer(needed_any~w5hq12*w3hq58+w5hq12+w3hq58+(1|cntry),
+  family=binomial,
+  data=PHW)
+```
+
+
+
+```{r}
+summary(model9)
+```
 
