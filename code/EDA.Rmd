@@ -995,4 +995,39 @@ model9=glmer(needed_any~w5hq12*w3hq58+w5hq12+w3hq58+(1|cntry),
 ```{r}
 summary(model9)
 ```
+```{r}
+cor(as.numeric(primary_health_wave$w5hq12),
+    as.numeric(primary_health_wave$w3hq58),
+    use = "complete.obs",
+    method = "spearman")
+```
+```{r}
+model_paidinwork=glmer(
+  needed_any~w3hq77+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model_paidinwork)
 
+```
+
+```{r}
+model_help_supportfromfamil=glmer(
+  needed_any~w5hq11+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model_help_supportfromfamil)
+```
+
+there migt be some use havingin the varible w5hq11 as it signifcnnat compared to w3hq77 which is not significant and not able to provide so will be removing and checking interaction later 
+found on meaningfull interaction between physical and loneliness as they are signification 
+```{r}
+model10=glmer(
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model10)
+```
+next interaction will be cntry and age 
