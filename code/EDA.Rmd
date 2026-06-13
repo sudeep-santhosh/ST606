@@ -1030,4 +1030,31 @@ model10=glmer(
 )
 summary(model10)
 ```
+
+
+checking out marginal effects and how it interacts  
+what does marinal effects speak about 
+"How much does the predicted probability change when X changes?"
+
+```{r}
+library(marginaleffects)
+slopes(
+  model10,
+  variables = "w5hq12",
+  by = "w3hq58"
+)
+```
+```{r}
+library(ggeffects)
+library(ggplot2)
+
+pred=ggpredict(
+  model10,
+  terms=c("w5hq12", "w3hq58")
+)
+
+plot(pred)
+```
+Predicted probabilities indicated that the relationship between loneliness and unmet healthcare needs varied across levels of physical health. While higher loneliness was associated with greater probabilities of unmet healthcare needs in some physical-health groups, the pattern was not uniform across all groups. This suggests a complex relationship between loneliness, physical health, and unmet healthcare
+
 next interaction will be cntry and age 
