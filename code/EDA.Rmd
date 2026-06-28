@@ -812,7 +812,7 @@ model_6=glmer(
 summary(model_6)
 ```
 ```{r}
-model_7=model_0 <- glmer(
+model_7= glmer(
   needed_any ~ age + gndr +
 
     factor(w3hq77,
@@ -1024,11 +1024,12 @@ there migt be some use havingin the varible w5hq11 as it signifcnnat compared to
 found on meaningfull interaction between physical and loneliness as they are signification 
 ```{r}
 model10=glmer(
-  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|cntry),
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|
+                                                                                cntry),
   family=binomial,
   data=PHW
 )
-summary(model10)
+anova(model10)
 ```
 
 
@@ -1058,3 +1059,132 @@ plot(pred)
 Predicted probabilities indicated that the relationship between loneliness and unmet healthcare needs varied across levels of physical health. While higher loneliness was associated with greater probabilities of unmet healthcare needs in some physical-health groups, the pattern was not uniform across all groups. This suggests a complex relationship between loneliness, physical health, and unmet healthcare
 
 next interaction will be cntry and age 
+
+make plot on logit scale and 
+(age|cntry)
+
+marginaleffects - plot_predictions
+
+answer few questions once doen with model
+
+look at non parmeterci models
+
+```{r}
+model11=glmer(
+  needed_any~gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(age|cntry),
+  family=binomial,
+  data=PHW
+)
+summary(model11)
+```
+
+
+
+
+```{r}
+model_11_age=glmer(
+  needed_any ~ gndr +
+
+    factor(w3hq77,
+           levels = c(1,2),
+           labels = c("Yes","No")) +
+
+    factor(w3hq57,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w5hq8,
+           levels = c(5,4,3,2,1),
+           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered = TRUE) +
+
+    factor(w5hq12,
+           levels = c(1,2,3,4),
+           labels = c(
+             "None or almost none of the time",
+             "Some of the time",
+             "Most of the time",
+             "All or almost all of the time"
+           ),
+           ordered = TRUE) *
+
+    factor(w5hq18,
+           levels = c(5,4,3,2,1),
+           labels = c(
+             "Disagree strongly",
+             "Disagree",
+             "Neither agree nor disagree",
+             "Agree",
+             "Agree strongly"
+           ),
+           ordered = TRUE) +
+
+    w5hq11 +
+    (age| cntry),
+
+  family = binomial,
+  data = primary_health_wave
+)
+
+```
+
+```{r}
+model_10_anova=glmer(
+  needed_any ~ gndr +age+
+    factor(w3hq77,
+           levels = c(1,2),
+           labels = c("Yes","No")) +
+
+    factor(w3hq57,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w5hq8,
+           levels = c(5,4,3,2,1),
+           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered = TRUE) +
+
+    factor(w5hq12,
+           levels = c(1,2,3,4),
+           labels = c(
+             "None or almost none of the time",
+             "Some of the time",
+             "Most of the time",
+             "All or almost all of the time"
+           ),
+           ordered = TRUE) *
+
+    factor(w5hq18,
+           levels = c(5,4,3,2,1),
+           labels = c(
+             "Disagree strongly",
+             "Disagree",
+             "Neither agree nor disagree",
+             "Agree",
+             "Agree strongly"
+           ),
+           ordered = TRUE) +
+
+    w5hq11 +
+    (1| cntry),
+  family = binomial,
+  data = primary_health_wave
+)
+```
+
+```{r}
+anova(model_11_age,model_10_anova)
+```
+having age randomness did not improve the model 
