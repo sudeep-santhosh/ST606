@@ -1188,3 +1188,26 @@ model_10_anova=glmer(
 anova(model_11_age,model_10_anova)
 ```
 having age randomness did not improve the model 
+
+```{r}
+library(marginaleffects)
+plot_predictions(
+  model10,
+  condition=c("w5hq12", "w3hq58"),
+  type="link"
+) +
+  scale_x_discrete(
+    labels=c(
+      "None or almost none of the time"= "Never",
+      "Some of the time"="Sometimes",
+      "Most of the time"="Often",
+      "All or almost all of the time"="Always"
+    )
+  )+
+  labs(
+    x="Loneliness",
+    y="estimate",
+    color="Physical Health"
+  )
+```
+
