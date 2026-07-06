@@ -26,6 +26,7 @@ library(sjPlot)
 library(naniar)
 library(tinytable)
 library(ggmosaic)
+library(caTools)
 options(tinytable_tt_digits = 3)
 options(tinytable_latex_placement = "H")
 ```
@@ -1209,5 +1210,52 @@ plot_predictions(
     y="estimate",
     color="Physical Health"
   )
+```
+
+```{r}
+set.seed(123)
+train_index=sample(
+  1:nrow(PHW),
+  size=0.8*nrow(PHW)
+)
+
+train_data=PHW[train_index, ]
+test_data=PHW[-train_index, ]
+```
+
+
+```{r}
+library(ranger)
+set.seed(123)
+
+rf_model=ranger(
+  needed_any~cntry+age+gndr+w5hq18+w5hq12+
+    w5hq8+w3hq58+w3hq57+w5hq11,
+  data=train_data,
+  num.trees=500,
+  importance="permutation",
+  probability=TRUE,
+  seed=123
+)
+
+pred_class=colnames(pred$predictions)[
+  max.col(pred$predictions)
+]
+```
+
+```{r}
+pred=predict(rf_model,data=test_data)
+library(caret)
+confusionMatrix(
+  factor(pred_class),
+  factor(test_data$needed_any)
+)
+```
+```{r}
+glm_prob=predict(glm_model,
+                    newdata=test_data,
+                    type="response")
+rf_prob=predict(rf_model,
+                   data=test_data)$predictions[,2]
 ```
 
