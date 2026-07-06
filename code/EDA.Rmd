@@ -27,6 +27,8 @@ library(naniar)
 library(tinytable)
 library(ggmosaic)
 library(caTools)
+library(caret)
+library(ranger)
 options(tinytable_tt_digits = 3)
 options(tinytable_latex_placement = "H")
 ```
@@ -1025,8 +1027,7 @@ there migt be some use havingin the varible w5hq11 as it signifcnnat compared to
 found on meaningfull interaction between physical and loneliness as they are signification 
 ```{r}
 model10=glmer(
-  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|
-                                                                                cntry),
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|cntry),
   family=binomial,
   data=PHW
 )
@@ -1212,50 +1213,204 @@ plot_predictions(
   )
 ```
 
-```{r}
-set.seed(123)
-train_index=sample(
-  1:nrow(PHW),
-  size=0.8*nrow(PHW)
-)
+To ensure a fair comparison between Logistic Regression, Generalized Linear Mixed Models, and Random Forest, only complete observations for the variables included in the models were retained prior to the train-test split. All models were trained and evaluated on the same datasets.
 
-train_data=PHW[train_index, ]
-test_data=PHW[-train_index, ]
+
+```{r}
+model_vars=c("needed_any","gndr","w5hq18","w5hq12","w5hq8","w3hq58","w3hq57","w5hq11","age","cntry")
+PHW_complete=PHW[complete.cases(PHW[,model_vars]),model_vars]
+
 ```
 
+```{r}
+set.seed(555)
+train_index=createDataPartition(PHW_complete$needed_any,p=0.80,list=FALSE)
+train_data_comp=PHW_complete[train_index,]
+test_data_comp=PHW_complete[-train_index,]
+```
 
 ```{r}
-library(ranger)
-set.seed(123)
+model10=glmer(
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|cntry),
+  family=binomial,
+  data=train_data_comp
+)
+```
 
+```{r}
 rf_model=ranger(
   needed_any~cntry+age+gndr+w5hq18+w5hq12+
     w5hq8+w3hq58+w3hq57+w5hq11,
-  data=train_data,
+  data=train_data_comp,
   num.trees=500,
   importance="permutation",
   probability=TRUE,
   seed=123
 )
-
-pred_class=colnames(pred$predictions)[
-  max.col(pred$predictions)
-]
 ```
 
 ```{r}
-pred=predict(rf_model,data=test_data)
-library(caret)
+glmm_prob=predict(
+  model10,
+  newdata=test_data_comp,
+  type="response",
+  re.form=NA
+)
+
+glmm_pred=ifelse(glmm_prob>0.5,"Unmet Health Care","Met Health Care")
+glmm_pred=factor(glmm_pred,levels=levels(test_data$needed_any))
 confusionMatrix(
-  factor(pred_class),
-  factor(test_data$needed_any)
+  glmm_pred,
+  test_data$needed_any
 )
 ```
 ```{r}
-glm_prob=predict(glm_model,
-                    newdata=test_data,
-                    type="response")
-rf_prob=predict(rf_model,
-                   data=test_data)$predictions[,2]
+rf_prob=predict(rf_model,data=test_data)$predictions[,2]
+
+rf_pred=ifelse(rf_prob>0.5,"Unmet Health Care","Met Health Care")
+
+rf_pred=factor(rf_pred,levels=levels(test_data$needed_any))
+
+confusionMatrix(rf_pred,test_data$needed_any)
+```
+```{r}
+
+pred_country=predict_response(
+  model10,
+  terms="cntry"
+)
+
+country_table=pred_country[
+  order(-pred_country$predicted),
+  c("x","predicted","conf.low","conf.high")
+]
+
+country_table=country_table[1:4,]
+colnames(country_table)=c(
+  "Country",
+  "Predicted Probability",
+  "95% CI Lower",
+  "95% CI Upper"
+)
+
+tt(
+  country_table,
+  caption="Question 1: Which country has the highest predicted probability of unmet healthcare?"
+)
+
+
+pred_gender=predict_response(
+  model10,
+  terms="gndr"
+)
+
+gender_table=pred_gender[
+  ,
+  c("x","predicted","conf.low","conf.high")
+]
+gender_table=gender_table[1:4,]
+
+colnames(gender_table)=c(
+  "Gender",
+  "Predicted Probability",
+  "95% CI Lower",
+  "95% CI Upper"
+)
+
+tt(
+  gender_table,
+  caption="Question 2: Which gender has the highest predicted probability of unmet healthcare?"
+)
+
+
+pred_age=predict_response(
+  model10,
+  terms="age [20,30,40,50,60,70,80]"
+)
+
+age_table=pred_age[
+  ,
+  c("x","predicted","conf.low","conf.high")
+]
+age_table=age_table[1:4,]
+colnames(age_table)=c(
+  "Age",
+  "Predicted Probability",
+  "95% CI Lower",
+  "95% CI Upper"
+)
+
+tt(
+  age_table,
+  caption="Question 3: How does age influence the predicted probability of unmet healthcare?"
+)
+
+
+
+
+pred_interaction=predict_response(
+  model10,
+  terms=c(
+    "w5hq12",
+    "w3hq58"
+  )
+)
+
+interaction_table=pred_interaction[
+  order(-pred_interaction$predicted),
+  c(
+    "x",
+    "group",
+    "predicted",
+    "conf.low",
+    "conf.high"
+  )
+]
+interaction_table=interaction_table[1:4,]
+
+colnames(interaction_table)=c(
+  "Loneliness",
+  "Physical Health",
+  "Predicted Probability",
+  "95% CI Lower",
+  "95% CI Upper"
+)
+
+tt(
+  interaction_table,
+  caption="Question 4: Which combination of loneliness and physical health has the highest predicted probability of unmet healthcare?"
+)
+
+pred_country_gender=predict_response(
+  model10,
+  terms=c(
+    "cntry",
+    "gndr"
+  )
+)
+
+country_gender_table=pred_country_gender[
+  ,
+  c(
+    "x",
+    "group",
+    "predicted",
+    "conf.low",
+    "conf.high"
+  )
+]
+country_gender_table=country_gender_table[1:4,]
+colnames(country_gender_table)=c(
+  "Country",
+  "Gender",
+  "Predicted Probability",
+  "95% CI Lower",
+  "95% CI Upper"
+)
+
+tt(
+  country_gender_table,
+  caption="Question 5: What is the predicted probability of unmet healthcare by country and gender?"
+)
 ```
 
