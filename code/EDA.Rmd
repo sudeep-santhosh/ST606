@@ -29,6 +29,10 @@ library(ggmosaic)
 library(caTools)
 library(caret)
 library(ranger)
+library(Metrics)
+library(sjPlot)
+library(ggeffects)
+library(marginaleffects)
 options(tinytable_tt_digits = 3)
 options(tinytable_latex_placement = "H")
 ```
@@ -119,6 +123,9 @@ sum(duplicated(primary_health_wave$new_id))
 
 
 
+```{r}
+class(primary_health_wave$cntry)
+```
 
 ## Model parametrs at intial phase
 
@@ -557,6 +564,57 @@ model_0=glm(
 summary(model_0)
 ```
 
+```{r}
+
+plot_model(
+  model_0,
+  type = "est",
+  transform = "exp",
+  title = "Factors Associated with Unmet Healthcare Need",
+  show.values = FALSE,
+  show.p = FALSE,
+  axis.labels = c(
+    "Healthcare costs covered",
+    "Financial difficulties",
+    "Currently employed",
+    "Support from clos contacts",
+    "Loneliness",
+    "Physical health",
+    "Mental health",
+    "Belgium",
+    "Austria",
+    "Iceland",
+    "France",
+    "Czech Republic",
+    "Hungary",
+    "Finland",
+    "Slovenia",
+    "Poland",
+    "Portugal",
+    "Female",
+    "Age"
+  )
+) +
+  theme(
+    plot.title = element_text(
+      size = 16,
+      face = "bold",
+      hjust = 0.5
+    ),
+    axis.title.x = element_text(
+      size = 13,
+      face = "bold"
+    ),
+    axis.text.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    panel.grid.major = element_line(colour = "grey85"),
+    panel.grid.minor = element_line(colour = "grey92")
+  )
+```
+
+
+
+
 
 
 Based on the output we can say that 
@@ -640,22 +698,22 @@ PHW$w5hq8=factor(
 ```{r}
 PHW$w5hq12=factor(
   primary_health_wave$w5hq12,
-  levels = c(1,2,3,4),
-  labels = c(
+  levels=c(1,2,3,4),
+  labels=c(
     "None or almost none of the time",
     "Some of the time",
     "Most of the time",
     "All or almost all of the time"
   ),
-  ordered = TRUE
+  ordered=TRUE
 )
 ```
 
 ```{r}
 PHW$w5hq18=factor(
   primary_health_wave$w5hq18,
-  levels = c(5,4,3,2,1),
-  labels = c(
+  levels=c(5,4,3,2,1),
+  labels=c(
     "Disagree strongly",
     "Disagree",
     "Neither agree nor disagree",
@@ -670,48 +728,48 @@ PHW$w5hq18=factor(
 model_2=glm(
   needed_any ~ age + gndr + cntry +
     factor(w3hq57,
-           levels = c(5,4,3,2,1),
-           labels = c("Very bad","Bad","Fair","Good","Very good"),
-           ordered = TRUE) +
+           levels=c(5,4,3,2,1),
+           labels=c("Very bad","Bad","Fair","Good","Very good"),
+           ordered=TRUE) +
 
     factor(w3hq58,
-           levels = c(5,4,3,2,1),
-           labels = c("Very bad","Bad","Fair","Good","Very good"),
-           ordered = TRUE) +
+           levels=c(5,4,3,2,1),
+           labels=c("Very bad","Bad","Fair","Good","Very good"),
+           ordered=TRUE) +
 
     factor(w5hq12,
-           levels = c(1,2,3,4),
-           labels = c(
+           levels=c(1,2,3,4),
+           labels=c(
              "None or almost none of the time",
              "Some of the time",
              "Most of the time",
              "All or almost all of the time"
            ),
-           ordered = TRUE) +
+           ordered= TRUE) +
 
     w5hq11 +
 
     factor(w3hq77,
-           levels = c(1,2),
-           labels = c("Yes","No")) +
+           levels=c(1,2),
+           labels=c("Yes","No")) +
 
     factor(w5hq8,
-           levels = c(5,4,3,2,1),
-           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
-           ordered = TRUE) +
+           levels=c(5,4,3,2,1),
+           labels=c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered=TRUE) +
 
     factor(w5hq18,
-           levels = c(5,4,3,2,1),
-           labels = c(
+           levels=c(5,4,3,2,1),
+           labels=c(
              "Disagree strongly",
              "Disagree",
              "Neither agree nor disagree",
              "Agree",
              "Agree strongly"
            ),
-           ordered = TRUE),
-  family = binomial,
-  data = primary_health_wave
+           ordered=TRUE),
+  family=binomial,
+  data=primary_health_wave
 )
 summary(model_2)
 ```
@@ -745,6 +803,163 @@ summary(model_1)
 
 - `w5hq18` Healthcare costs covered by system and unmet healthcare shows a strong and statistically significant negative linear association  In addition, significant higher-order (cubic and quadratic) terms suggest that the relationship is not strictly linear, indicating some complexity in how different levels of the variable relate to the outcome
 
+```{r}
+
+plot_model(
+  model_1,
+  type="est",
+  transform="exp",
+  title="Demographic Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "age",
+    "gndrFemale",
+    "cntryPT",
+    "cntryPL",
+    "cntrySI",
+    "cntryFI",
+    "cntryHU",
+    "cntryCZ",
+    "cntryFR",
+    "cntryIS",
+    "cntryAT",
+    "cntryBE"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Belgium",
+    "Austria",
+    "Iceland",
+    "France",
+    "Czech Republic",
+    "Hungary",
+    "Finland",
+    "Slovenia",
+    "Poland",
+    "Portugal",
+    "Female",
+    "Age"
+  )
+) +
+theme(
+  plot.title=element_text(size=18, face="bold", hjust=0.5),
+  axis.title.x=element_text(size=13, face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+```{r}
+plot_model(
+  model_1,
+  type="est",
+  transform="exp",
+  title="Mental and Physical Health Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "w3hq57.L",
+    "w3hq57.Q",
+    "w3hq57.C",
+    "w3hq57^4",
+    "w3hq58.L",
+    "w3hq58.Q",
+    "w3hq58.C",
+    "w3hq58^4"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Physical health (4th-order)",
+    "Physical health (Cubic)",
+    "Physical health (Quadratic)",
+    "Physical health (Linear)",
+    "Mental health (4th-order)",
+    "Mental health (Cubic)",
+    "Mental health (Quadratic)",
+    "Mental health (Linear)"
+  )
+) +
+theme(
+  plot.title=element_text(size=18, face="bold", hjust=0.5),
+  axis.title.x=element_text(size=13, face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+
+```{r}
+plot_model(
+  model_1,
+  type="est",
+  transform="exp",
+  title="Social Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "w5hq12.L",
+    "w5hq12.Q",
+    "w5hq12.C",
+    "w5hq11",
+    "w3hq77No"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Currently employed",
+    "Support from close contacts",
+    "Loneliness (Cubic)",
+    "Loneliness (Quadratic)",
+    "Loneliness (Linear)"
+  )
+) +
+theme(
+  plot.title=element_text(size=18, face="bold", hjust=0.5),
+  axis.title.x=element_text(size=13, face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+
+```{r}
+plot_model(
+  model_1,
+  type="est",
+  transform="exp",
+  title="Economic Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "w5hq8.L",
+    "w5hq8.Q",
+    "w5hq8.C",
+    "w5hq8^4",
+    "w5hq18.L",
+    "w5hq18.Q",
+    "w5hq18.C",
+    "w5hq18^4"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Healthcare costs (4th-order)",
+    "Healthcare costs (Cubic)",
+    "Healthcare costs (Quadratic)",
+    "Healthcare costs (Linear)",
+    "Financial difficulties (4th-order)",
+    "Financial difficulties (Cubic)",
+    "Financial difficulties (Quadratic)",
+    "Financial difficulties (Linear)"
+  )
+) +
+theme(
+  plot.title=element_text(size=18, face="bold", hjust=0.5),
+  axis.title.x=element_text(size=13, face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
 
 ```{r}
 anova(model_0,model_2)
@@ -814,6 +1029,122 @@ model_6=glmer(
 )
 summary(model_6)
 ```
+
+```{r}
+plot_model(
+  model_6,
+  type="est",
+  transform="exp",
+  title="Demographic Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "age",
+    "gndrFemale"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Female",
+    "Age"
+  )
+)+
+theme(
+  plot.title=element_text(size=18,face="bold",hjust=0.5),
+  axis.title.x=element_text(size=13,face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+```{r}
+plot_model(
+  model_6,
+  type="est",
+  transform="exp",
+  title="Mental and Physical Health Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "w3hq57.L",
+    "w3hq57.Q",
+    "w3hq57.C",
+    "w3hq57^4",
+    "w3hq58.L",
+    "w3hq58.Q",
+    "w3hq58.C",
+    "w3hq58^4"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Physical health (4th-order)",
+    "Physical health (Cubic)",
+    "Physical health (Quadratic)",
+    "Physical health (Linear)",
+    "Mental health (4th-order)",
+    "Mental health (Cubic)",
+    "Mental health (Quadratic)",
+    "Mental health (Linear)"
+  )
+)+
+theme(
+  plot.title=element_text(size=18,face="bold",hjust=0.5),
+  axis.title.x=element_text(size=13,face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+```{r}
+plot_model(
+  model_6,
+  type="est",
+  transform="exp",
+  title="Mental and Physical Health Factors Associated with Unmet Healthcare Need",
+  terms=c(
+    "w3hq57.L",
+    "w3hq57.Q",
+    "w3hq57.C",
+    "w3hq57^4",
+    "w3hq58.L",
+    "w3hq58.Q",
+    "w3hq58.C",
+    "w3hq58^4"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+    "Physical health (4th-order)",
+    "Physical health (Cubic)",
+    "Physical health (Quadratic)",
+    "Physical health (Linear)",
+    "Mental health (4th-order)",
+    "Mental health (Cubic)",
+    "Mental health (Quadratic)",
+    "Mental health (Linear)"
+  )
+)+
+theme(
+  plot.title=element_text(size=18,face="bold",hjust=0.5),
+  axis.title.x=element_text(size=13,face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+
+```{r}
+
+```
+
+```{r}
+plot_model(
+  model_6,
+  type="re",
+  title="Country Random Effects"
+)
+```
+
 ```{r}
 model_7= glmer(
   needed_any ~ age + gndr +
@@ -1034,22 +1365,88 @@ model10=glmer(
 anova(model10)
 ```
 
+```{r fig.width=11, fig.height=7}
+plot_model(
+  model10,
+  type="est",
+  transform="exp",
+  title="Main Effects Associated with Unmet Healthcare Need",
+  terms=c(
+    "age",
+    "gndrFemale",
+    "w5hq18.L",
+    "w5hq18.Q",
+    "w5hq18.C",
+    "w5hq18^4",
+    "w5hq12.L",
+    "w5hq12.Q",
+    "w5hq12.C",
+    "w3hq58.L",
+    "w3hq58.Q",
+    "w3hq58.C",
+    "w3hq58^4",
+    "w3hq57.L",
+    "w3hq57.Q",
+    "w3hq57.C",
+    "w3hq57^4",
+    "w5hq11"
+  ),
+  show.values=FALSE,
+  show.p=FALSE,
+  axis.labels=c(
+  "Support from close\ncontacts",
+  "Mental health\n(4th-order)",
+  "Mental health\n(Cubic)",
+  "Mental health\n(Quadratic)",
+  "Mental health\n(Linear)",
+  "Physical health\n(4th-order)",
+  "Physical health\n(Cubic)",
+  "Physical health\n(Quadratic)",
+  "Physical health\n(Linear)",
+  "Loneliness\n(Cubic)",
+  "Loneliness\n(Quadratic)",
+  "Loneliness\n(Linear)",
+  "Healthcare costs\n(4th-order)",
+  "Healthcare costs\n(Cubic)",
+  "Healthcare costs\n(Quadratic)",
+  "Healthcare costs\n(Linear)",
+  "Female",
+  "Age"
+)
+)+
+theme(
+  plot.title=element_text(size=14,face="bold",hjust=0.5),
+  axis.title.x=element_text(size=13,face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
+)
+```
+```{r}
+plot_model(
+  model10,
+  type="int",
+  terms=c("w5hq12","w3hq58")
+)
+```
+
 
 checking out marginal effects and how it interacts  
 what does marinal effects speak about 
 "How much does the predicted probability change when X changes?"
 
 ```{r}
-library(marginaleffects)
+
 slopes(
   model10,
   variables = "w5hq12",
   by = "w3hq58"
 )
 ```
+
 ```{r}
-library(ggeffects)
-library(ggplot2)
+
 
 pred=ggpredict(
   model10,
@@ -1230,7 +1627,7 @@ test_data_comp=PHW_complete[-train_index,]
 ```
 
 ```{r}
-model10=glmer(
+model101=glmer(
   needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq12*w3hq58+(1|cntry),
   family=binomial,
   data=train_data_comp
@@ -1251,7 +1648,7 @@ rf_model=ranger(
 
 ```{r}
 glmm_prob=predict(
-  model10,
+  model101,
   newdata=test_data_comp,
   type="response",
   re.form=NA
@@ -1308,7 +1705,7 @@ gender_table=pred_gender[
   ,
   c("x","predicted","conf.low","conf.high")
 ]
-gender_table=gender_table[1:4,]
+gender_table=gender_table[1:2,]
 
 colnames(gender_table)=c(
   "Gender",
@@ -1412,5 +1809,26 @@ tt(
   country_gender_table,
   caption="Question 5: What is the predicted probability of unmet healthcare by country and gender?"
 )
+```
+
+```{r}
+y_true=ifelse(
+  test_data$needed_any=="Unmet Health Care",
+  1,
+  0
+)
+
+glmm_logloss=logLoss(
+  y_true,
+  glmm_prob
+)
+
+rf_logloss=logLoss(
+  y_true,
+  rf_prob
+)
+
+glmm_logloss
+rf_logloss
 ```
 
