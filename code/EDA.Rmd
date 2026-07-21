@@ -1086,7 +1086,7 @@ plot_model(
   )
 )+
 theme(
-  plot.title=element_text(size=18,face="bold",hjust=0.5),
+  plot.title=element_text(size=16,face="bold",hjust=0.5),
   axis.title.x=element_text(size=13,face="bold"),
   axis.text.x=element_text(size=11),
   axis.text.y=element_text(size=11),
@@ -1124,7 +1124,7 @@ plot_model(
   )
 )+
 theme(
-  plot.title=element_text(size=18,face="bold",hjust=0.5),
+  plot.title=element_text(size=16,face="bold",hjust=0.5),
   axis.title.x=element_text(size=13,face="bold"),
   axis.text.x=element_text(size=11),
   axis.text.y=element_text(size=11),
@@ -1142,6 +1142,14 @@ plot_model(
   model_6,
   type="re",
   title="Country Random Effects"
+)+
+theme(
+  plot.title=element_text(size=16,face="bold",hjust=0.5),
+  axis.title.x=element_text(size=13,face="bold"),
+  axis.text.x=element_text(size=11),
+  axis.text.y=element_text(size=11),
+  panel.grid.major=element_line(colour="grey85"),
+  panel.grid.minor=element_line(colour="grey92")
 )
 ```
 
@@ -1364,6 +1372,13 @@ model10=glmer(
 )
 anova(model10)
 ```
+```{r}
+model7=glmer(
+  needed_any~age+gndr+w5hq18+w5hq12+w5hq8+w3hq58+w3hq57+w5hq11+w5hq1+*w3hq58+(1|cntry),
+  family=binomial,
+  data=PHW
+)
+```
 
 ```{r fig.width=11, fig.height=7}
 plot_model(
@@ -1453,8 +1468,24 @@ pred=ggpredict(
   terms=c("w5hq12", "w3hq58")
 )
 
-plot(pred)
+plot(pred) +
+  labs(
+    title = "Predicted Probability of Unmet Healthcare Need",
+    x = "Loneliness",
+    y = "Predicted Probability",
+    colour = "Subjective Physical Health"
+  ) +
+  theme(
+    axis.text.x = element_text(
+    size = 8
+  )
+)
+
 ```
+```{r}
+summary(model10)
+```
+
 Predicted probabilities indicated that the relationship between loneliness and unmet healthcare needs varied across levels of physical health. While higher loneliness was associated with greater probabilities of unmet healthcare needs in some physical-health groups, the pattern was not uniform across all groups. This suggests a complex relationship between loneliness, physical health, and unmet healthcare
 
 next interaction will be cntry and age 
@@ -1511,7 +1542,7 @@ model_11_age=glmer(
              "Most of the time",
              "All or almost all of the time"
            ),
-           ordered = TRUE) *
+           ordered = TRUE) 
 
     factor(w5hq18,
            levels = c(5,4,3,2,1),
@@ -1545,15 +1576,14 @@ model_10_anova=glmer(
            labels = c("Very bad","Bad","Fair","Good","Very good"),
            ordered = TRUE) +
 
-    factor(w3hq58,
-           levels = c(5,4,3,2,1),
-           labels = c("Very bad","Bad","Fair","Good","Very good"),
-           ordered = TRUE) +
-
     factor(w5hq8,
            levels = c(5,4,3,2,1),
            labels = c("Never","Hardly ever","Sometimes","Often","Always"),
            ordered = TRUE) +
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE)*
 
     factor(w5hq12,
            levels = c(1,2,3,4),
@@ -1563,7 +1593,7 @@ model_10_anova=glmer(
              "Most of the time",
              "All or almost all of the time"
            ),
-           ordered = TRUE) *
+           ordered = TRUE) +
 
     factor(w5hq18,
            levels = c(5,4,3,2,1),
@@ -1655,20 +1685,20 @@ glmm_prob=predict(
 )
 
 glmm_pred=ifelse(glmm_prob>0.5,"Unmet Health Care","Met Health Care")
-glmm_pred=factor(glmm_pred,levels=levels(test_data$needed_any))
+glmm_pred=factor(glmm_pred,levels=levels(test_data_comp$needed_any))
 confusionMatrix(
   glmm_pred,
-  test_data$needed_any
+  test_data_comp$needed_any
 )
 ```
 ```{r}
-rf_prob=predict(rf_model,data=test_data)$predictions[,2]
+rf_prob=predict(rf_model,data=test_data_comp)$predictions[,2]
 
 rf_pred=ifelse(rf_prob>0.5,"Unmet Health Care","Met Health Care")
 
-rf_pred=factor(rf_pred,levels=levels(test_data$needed_any))
+rf_pred=factor(rf_pred,levels=levels(test_data_comp$needed_any))
 
-confusionMatrix(rf_pred,test_data$needed_any)
+confusionMatrix(rf_pred,test_data_comp$needed_any)
 ```
 ```{r}
 
@@ -1813,7 +1843,7 @@ tt(
 
 ```{r}
 y_true=ifelse(
-  test_data$needed_any=="Unmet Health Care",
+  test_data_comp$needed_any=="Unmet Health Care",
   1,
   0
 )
@@ -1830,5 +1860,67 @@ rf_logloss=logLoss(
 
 glmm_logloss
 rf_logloss
+```
+
+```{r}
+anova(model_10_anova,model_7)
+```
+
+```{r}
+model_age_gndr=glmer(
+  needed_any ~ gndr *age+
+    factor(w3hq77,
+           levels = c(1,2),
+           labels = c("Yes","No")) +
+
+    factor(w3hq57,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w3hq58,
+           levels = c(5,4,3,2,1),
+           labels = c("Very bad","Bad","Fair","Good","Very good"),
+           ordered = TRUE) +
+
+    factor(w5hq8,
+           levels = c(5,4,3,2,1),
+           labels = c("Never","Hardly ever","Sometimes","Often","Always"),
+           ordered = TRUE) +
+
+    factor(w5hq12,
+           levels = c(1,2,3,4),
+           labels = c(
+             "None or almost none of the time",
+             "Some of the time",
+             "Most of the time",
+             "All or almost all of the time"
+           ),
+           ordered = TRUE) *
+
+    factor(w5hq18,
+           levels = c(5,4,3,2,1),
+           labels = c(
+             "Disagree strongly",
+             "Disagree",
+             "Neither agree nor disagree",
+             "Agree",
+             "Agree strongly"
+           ),
+           ordered = TRUE) +
+
+    w5hq11 +
+    (1| cntry),
+  family = binomial,
+  data = primary_health_wave
+)
+```
+
+```{r}
+anova(model_10_anova,model_age_gndr)
+```
+
+```{r}
+summary(model_10_anova)
 ```
 
